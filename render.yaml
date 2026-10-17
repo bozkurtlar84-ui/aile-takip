@@ -1,0 +1,16 @@
+# Render.com için dağıtım tanımı (Blueprint)
+# Render bu dosyayı okuyup servisi otomatik kurar.
+services:
+  - type: web
+    name: aile-takip-sunucu
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      # Anahtarları Render panelinden gir (sabit kalsınlar diye).
+      # Değerleri Render'da "Environment" bölümünden ekleyeceksin.
+      - key: ADMIN_KEY
+        sync: false
+      - key: DEVICE_KEY
+        sync: false

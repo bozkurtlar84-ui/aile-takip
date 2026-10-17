@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aile Cihaz Takip Paneli</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0f1420;
+      --panel: #1a2130;
+      --panel-2: #222c40;
+      --line: #2e3a52;
+      --text: #e7ecf5;
+      --muted: #8b97ad;
+      --accent: #4f8cff;
+      --accent-2: #2f6fe0;
+      --green: #35c88a;
+      --red: #e5484d;
+      --amber: #f2b64c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    header h1 { font-size: 17px; margin: 0; font-weight: 600; flex: 1; }
+    header .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+    header .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+    .tabs { display: flex; gap: 4px; }
+    .tab {
+      padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+      color: var(--muted); border: 1px solid transparent;
+    }
+    .tab.active { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+
+    .main { flex: 1; display: flex; min-height: 0; }
+    .sidebar {
+      width: 360px; background: var(--panel); border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    #map { flex: 1; min-height: 0; background: #0b0f17; }
+
+    .card {
+      margin: 14px; background: var(--panel-2); border: 1px solid var(--line);
+      border-radius: 12px; padding: 16px;
+    }
+    .device-name { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .status-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--muted); margin-bottom: 14px;
+    }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge.on { background: rgba(53,200,138,.15); color: var(--green); }
+    .badge.off { background: rgba(139,151,173,.15); color: var(--muted); }
+
+    button.track {
+      width: 100%; padding: 13px; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: .15s; color: #fff;
+    }
+    button.track.start { background: var(--accent); }
+    button.track.start:hover { background: var(--accent-2); }
+    button.track.stop { background: var(--red); }
+    button.track.stop:hover { filter: brightness(.9); }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .info-grid .item { background: var(--panel); border-radius: 8px; padding: 10px; }
+    .info-grid .label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    .info-grid .value { font-size: 14px; font-weight: 600; }
+
+    .date-bar { margin: 0 14px 10px; display: flex; gap: 8px; align-items: center; }
+    .date-bar select {
+      flex: 1; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line);
+      background: var(--panel-2); color: var(--text); font-size: 13px;
+    }
+    .section-title {
+      margin: 10px 14px 6px; font-size: 12px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .stop-item {
+      margin: 0 14px 8px; padding: 12px; background: var(--panel-2);
+      border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    }
+    .stop-item:hover { border-color: var(--accent); }
+    .stop-item .st-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .stop-item .st-time { font-size: 14px; font-weight: 600; }
+    .stop-item .st-dur { font-size: 12px; color: var(--amber); font-weight: 600; }
+    .stop-item .st-addr { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .history-item {
+      margin: 0 14px 6px; padding: 10px 12px; background: var(--panel-2);
+      border: 1px solid var(--line); border-radius: 8px; font-size: 13px; cursor: pointer;
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-item .time { color: var(--muted); font-size: 11px; }
+    .empty { margin: 0 14px; color: var(--muted); font-size: 13px; }
+
+    .login { position: fixed; inset: 0; background: var(--bg); display: flex;
+      align-items: center; justify-content: center; z-index: 1000; }
+    .login .box { background: var(--panel); border: 1px solid var(--line);
+      border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; }
+    .login h2 { margin: 0 0 6px; font-size: 20px; }
+    .login p { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+    .login input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--panel-2); color: var(--text); font-size: 14px; margin-bottom: 12px; }
+    .login button { width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .login .err { color: var(--red); font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+    .muted-note { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.5; }
+
+    .stop-marker-label {
+      background: var(--accent); color: #fff; border-radius: 50%;
+      width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; border: 2px solid #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login" id="login">
+    <div class="box">
+      <h2>Aile Takip Paneli</h2>
+      <p>Devam etmek için yönetici anahtarını gir. (Sunucu ilk açıldığında konsolda yazar.)</p>
+      <div class="err" id="loginErr"></div>
+      <input type="password" id="adminKeyInput" placeholder="Yönetici anahtarı" autocomplete="off" />
+      <button onclick="doLogin()">Giriş Yap</button>
+      <div class="muted-note">Anahtar bu tarayıcıda saklanır, her açılışta tekrar sormaz.</div>
+    </div>
+  </div>
+
+  <header>
+    <div class="dot" id="headDot"></div>
+    <h1>Aile Cihaz Takip Paneli</h1>
+    <div class="tabs">
+      <div class="tab active" id="tab-canli" onclick="setMode('canli')">Canlı</div>
+      <div class="tab" id="tab-gun" onclick="setMode('gun')">Günlük Hareket</div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="sidebar">
+      <div id="panelCanli">
+        <div class="card">
+          <div class="device-name" id="devName">Yükleniyor…</div>
+          <div class="status-row">
+            <span id="lastSeen">—</span>
+            <span class="badge off" id="trackBadge">Takip Kapalı</span>
+          </div>
+          <button class="track start" id="trackBtn" onclick="toggleTracking()">Takip Başlat</button>
+          <div class="info-grid">
+            <div class="item"><div class="label">Pil</div><div class="value" id="battery">—</div></div>
+            <div class="item"><div class="label">Hız</div><div class="value" id="speed">—</div></div>
+            <div class="item"><div class="label">Doğruluk</div><div class="value" id="accuracy">—</div></div>
+            <div class="item"><div class="label">Son konum</div><div class="value" id="locTime">—</div></div>
+          </div>
+        </div>
+        <div class="section-title">Son Hareketler</div>
+        <div id="historyList"></div>
+      </div>
+
+      <div id="panelGun" style="display:none">
+        <div class="section-title">Tarih</div>
+        <div class="date-bar">
+          <select id="daySelect" onchange="loadDay()"></select>
+        </div>
+        <div class="date-bar">
+          <div class="tabs" style="width:100%">
+            <div class="tab active" id="vt-rota" onclick="setDayView('rota')" style="flex:1;text-align:center">Rota</div>
+            <div class="tab" id="vt-isi" onclick="setDayView('isi')" style="flex:1;text-align:center">Isı Haritası</div>
+          </div>
+        </div>
+        <div class="section-title">Uğranılan Yerler</div>
+        <div id="stopsList"><div class="empty">Tarih seç…</div></div>
+      </div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script>
+    let ADMIN_KEY = localStorage.getItem("adminKey") || "";
+    const DEVICE_ID = "telefon-1";
+    const TZ_OFFSET = new Date().getTimezoneOffset();
+    let map, marker, trail;
+    let currentTracking = false;
+    let pollTimer = null;
+    let mode = "canli";
+    let dayView = "rota";
+    let dayLayers = [];
+    let addressCache = {};
+
+    if (ADMIN_KEY) { hideLogin(); startApp(); }
+
+    function doLogin() {
+      const val = document.getElementById("adminKeyInput").value.trim();
+      if (!val) return;
+      ADMIN_KEY = val;
+      fetch("/api/admin/devices", { headers: { "x-admin-key": ADMIN_KEY } })
+        .then((r) => { if (r.status === 401) throw new Error("Anahtar yanlış"); return r.json(); })
+        .then(() => { localStorage.setItem("adminKey", ADMIN_KEY); hideLogin(); startApp(); })
+        .catch((e) => { document.getElementById("loginErr").textContent = e.message; });
+    }
+    function hideLogin() { document.getElementById("login").style.display = "none"; }
+
+    function initMap() {
+      map = L.map("map").setView([39.0, 35.0], 6);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap", maxZoom: 19,
+      }).addTo(map);
+    }
+
+    function startApp() {
+      initMap();
+      refresh();
+      pollTimer = setInterval(() => { if (mode === "canli") refresh(); }, 5000);
+    }
+
+    function api(path, opts = {}) {
+      return fetch(path, {
+        ...opts,
+        headers: { "x-admin-key": ADMIN_KEY, "Content-Type": "application/json", ...(opts.headers || {}) },
+      }).then((r) => r.json());
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById("tab-canli").classList.toggle("active", m === "canli");
+      document.getElementById("tab-gun").classList.toggle("active", m === "gun");
+      document.getElementById("panelCanli").style.display = m === "canli" ? "block" : "none";
+      document.getElementById("panelGun").style.display = m === "gun" ? "block" : "none";
+      clearDayLayers();
+      if (marker && m === "gun") { map.removeLayer(marker); marker = null; }
+      if (trail && m === "gun") { map.removeLayer(trail); trail = null; }
+      // Harita gizli kutudan görünür hale gelince boyutunu yenile
+      setTimeout(() => map.invalidateSize(), 100);
+      if (m === "canli") { refresh(); }
+      else { loadDays(); }
+    }
+
+    function setDayView(v) {
+      dayView = v;
+      document.getElementById("vt-rota").classList.toggle("active", v === "rota");
+      document.getElementById("vt-isi").classList.toggle("active", v === "isi");
+      loadDay();
+    }
+
+    // ===== CANLI =====
+    async function refresh() {
+      try {
+        const { devices } = await api("/api/admin/devices");
+        const d = devices.find((x) => x.id === DEVICE_ID) || devices[0];
+        if (!d) return;
+        renderDevice(d);
+        if (mode === "canli") {
+          const { history } = await api(`/api/admin/devices/${DEVICE_ID}/history?limit=200`);
+          renderHistory(history);
+          renderTrailLive(history);
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function renderDevice(d) {
+      currentTracking = d.tracking;
+      document.getElementById("devName").textContent = d.name;
+      const badge = document.getElementById("trackBadge");
+      const btn = document.getElementById("trackBtn");
+      const headDot = document.getElementById("headDot");
+      if (d.tracking) {
+        badge.textContent = "Takip Aktif"; badge.className = "badge on";
+        btn.textContent = "Takibi Durdur"; btn.className = "track stop";
+        headDot.className = "dot on";
+      } else {
+        badge.textContent = "Takip Kapalı"; badge.className = "badge off";
+        btn.textContent = "Takip Başlat"; btn.className = "track start";
+        headDot.className = "dot";
+      }
+      document.getElementById("lastSeen").textContent =
+        d.lastSeen ? "Son bağlantı: " + timeAgo(d.lastSeen) : "Henüz bağlanmadı";
+      const loc = d.lastLocation;
+      if (loc) {
+        document.getElementById("battery").textContent = loc.battery != null ? loc.battery + "%" : "—";
+        document.getElementById("speed").textContent = loc.speed != null ? Math.round(loc.speed * 3.6) + " km/s" : "—";
+        document.getElementById("accuracy").textContent = loc.accuracy != null ? "±" + Math.round(loc.accuracy) + " m" : "—";
+        document.getElementById("locTime").textContent = timeAgo(loc.ts);
+        if (mode === "canli") placeMarker(loc);
+      }
+    }
+
+    function placeMarker(loc) {
+      const pos = [loc.lat, loc.lon];
+      if (!marker) { marker = L.marker(pos).addTo(map); map.setView(pos, 16); }
+      else marker.setLatLng(pos);
+      marker.bindPopup(`<b>Son konum</b><br>${timeAgo(loc.ts)}<br>${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}`);
+    }
+
+    function renderTrailLive(history) {
+      if (trail) { map.removeLayer(trail); trail = null; }
+      if (!history || history.length < 2) return;
+      const pts = history.map((h) => [h.lat, h.lon]).reverse();
+      trail = L.polyline(pts, { color: "#4f8cff", weight: 3, opacity: 0.6 }).addTo(map);
+    }
+
+    function renderHistory(history) {
+      const el = document.getElementById("historyList");
+      if (!history || history.length === 0) { el.innerHTML = '<div class="empty">Henüz konum yok.</div>'; return; }
+      el.innerHTML = history.slice(0, 50).map((h) => `
+        <div class="history-item" onclick="map.setView([${h.lat},${h.lon}],17)">
+          <div>${h.lat.toFixed(5)}, ${h.lon.toFixed(5)}</div>
+          <div class="time">${timeAgo(h.ts)}${h.battery != null ? " · " + h.battery + "% pil" : ""}</div>
+        </div>`).join("");
+    }
+
+    async function toggleTracking() {
+      const next = !currentTracking;
+      if (next && !confirm("Takibi başlatmak istediğine emin misin?\n\nTelefon, aktifleştikten sonra konumunu göndermeye başlayacak.")) return;
+      await api(`/api/admin/devices/${DEVICE_ID}/tracking`, { method: "POST", body: JSON.stringify({ enabled: next }) });
+      refresh();
+    }
+
+    // ===== GÜNLÜK =====
+    function clearDayLayers() {
+      dayLayers.forEach((l) => map.removeLayer(l));
+      dayLayers = [];
+    }
+
+    async function loadDays() {
+      const { days } = await api(`/api/admin/devices/${DEVICE_ID}/days?tzOffsetMin=${TZ_OFFSET}`);
+      const sel = document.getElementById("daySelect");
+      if (!days || days.length === 0) {
+        sel.innerHTML = '<option>Veri yok</option>';
+        document.getElementById("stopsList").innerHTML = '<div class="empty">Henüz kayıtlı gün yok.</div>';
+        return;
+      }
+      sel.innerHTML = days.map((d) => `<option value="${d}">${formatDate(d)}</option>`).join("");
+      loadDay();
+    }
+
+    async function loadDay() {
+      const date = document.getElementById("daySelect").value;
+      if (!date || date === "Veri yok") return;
+      clearDayLayers();
+      const data = await api(`/api/admin/devices/${DEVICE_ID}/day?date=${date}&tzOffsetMin=${TZ_OFFSET}`);
+      const pts = data.points || [];
+      const stops = data.stops || [];
+
+      if (pts.length === 0) {
+        document.getElementById("stopsList").innerHTML = '<div class="empty">Bu gün için konum yok.</div>';
+        return;
+      }
+
+      const latlngs = pts.map((p) => [p.lat, p.lon]);
+
+      if (dayView === "isi") {
+        const heat = L.heatLayer(pts.map((p) => [p.lat, p.lon, 0.6]), {
+          radius: 25, blur: 18, maxZoom: 17,
+        }).addTo(map);
+        dayLayers.push(heat);
+      } else {
+        const line = L.polyline(latlngs, { color: "#4f8cff", weight: 4, opacity: 0.7 }).addTo(map);
+        dayLayers.push(line);
+        const startM = L.circleMarker(latlngs[0], { radius: 7, color: "#35c88a", fillColor: "#35c88a", fillOpacity: 1 })
+          .addTo(map).bindPopup("Gün başlangıcı");
+        const endM = L.circleMarker(latlngs[latlngs.length - 1], { radius: 7, color: "#e5484d", fillColor: "#e5484d", fillOpacity: 1 })
+          .addTo(map).bindPopup("Son konum");
+        dayLayers.push(startM, endM);
+      }
+
+      stops.forEach((s, i) => {
+        const icon = L.divIcon({
+          className: "", html: `<div class="stop-marker-label">${i + 1}</div>`,
+          iconSize: [26, 26], iconAnchor: [13, 13],
+        });
+        const m = L.marker([s.lat, s.lon], { icon }).addTo(map)
+          .bindPopup(`<b>Durak ${i + 1}</b><br>${fmtTime(s.start)} - ${fmtTime(s.end)}<br>${s.durationMin} dakika`);
+        dayLayers.push(m);
+      });
+
+      const bounds = L.latLngBounds(latlngs);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+
+      renderStops(stops);
+    }
+
+    function renderStops(stops) {
+      const el = document.getElementById("stopsList");
+      if (!stops || stops.length === 0) {
+        el.innerHTML = '<div class="empty">Bu gün uzun süreli durak yok.</div>';
+        return;
+      }
+      el.innerHTML = stops.map((s, i) => `
+        <div class="stop-item" onclick="map.setView([${s.lat},${s.lon}],17)">
+          <div class="st-top">
+            <span class="st-time">${i + 1}. ${fmtTime(s.start)} – ${fmtTime(s.end)}</span>
+            <span class="st-dur">${s.durationMin} dk</span>
+          </div>
+          <div class="st-addr" id="addr-${i}">Adres alınıyor…</div>
+        </div>`).join("");
+      stops.forEach((s, i) => {
+        setTimeout(() => resolveAddress(s.lat, s.lon, `addr-${i}`), i * 1100);
+      });
+    }
+
+    async function resolveAddress(lat, lon, elId) {
+      const key = lat.toFixed(4) + "," + lon.toFixed(4);
+      const el = document.getElementById(elId);
+      if (!el) return;
+      if (addressCache[key]) { el.textContent = addressCache[key]; return; }
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=tr&zoom=16`);
+        const j = await r.json();
+        const a = j.address || {};
+        const parts = [
+          a.neighbourhood || a.suburb || a.quarter,
+          a.road,
+          a.town || a.city || a.village || a.county,
+        ].filter(Boolean);
+        const text = parts.length ? parts.join(", ") : (j.display_name || "Adres bulunamadı");
+        addressCache[key] = text;
+        if (document.getElementById(elId)) document.getElementById(elId).textContent = text;
+      } catch (e) {
+        if (document.getElementById(elId)) document.getElementById(elId).textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      }
+    }
+
+    function timeAgo(ts) {
+      const diff = Date.now() - ts; const s = Math.floor(diff / 1000);
+      if (s < 60) return s + " sn önce";
+      const m = Math.floor(s / 60); if (m < 60) return m + " dk önce";
+      const h = Math.floor(m / 60); if (h < 24) return h + " saat önce";
+      return Math.floor(h / 24) + " gün önce";
+    }
+    function fmtTime(ts) {
+      return new Date(ts).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+    }
+    function formatDate(ds) {
+      const [y, m, d] = ds.split("-");
+      const today = new Date();
+      const tStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+      const yd = new Date(today.getTime() - 86400000);
+      const yStr = yd.getFullYear() + "-" + String(yd.getMonth()+1).padStart(2,"0") + "-" + String(yd.getDate()).padStart(2,"0");
+      if (ds === tStr) return "Bugün (" + d + "." + m + ")";
+      if (ds === yStr) return "Dün (" + d + "." + m + ")";
+      return d + "." + m + "." + y;
+    }
+  </script>
+</body>
+</html>

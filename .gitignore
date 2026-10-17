@@ -1,0 +1,10 @@
+# Bağımlılıklar (Render kendisi kurar)
+node_modules/
+
+# Yerel veri ve anahtarlar (buluta gitmemeli)
+data/
+
+# İşletim sistemi / editör
+.DS_Store
+Thumbs.db
+*.log
