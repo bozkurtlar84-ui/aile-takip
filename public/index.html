@@ -127,8 +127,8 @@
       background: var(--live); transition: filter .12s, transform .05s; }
     .track-btn:hover { filter: brightness(1.06); }
     .track-btn:active { transform: translateY(1px); }
-    .track-btn.stop { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
-    .track-btn.stop:hover { background: rgba(255,90,106,.08); filter: none; }
+    .track-btn.halt { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+    .track-btn.halt:hover { background: rgba(255,90,106,.08); filter: none; }
 
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 16px; }
     .stat { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -224,6 +224,62 @@
     /* Açık OSM döşemelerini koyu temaya çevir (anahtar gerektirmez) */
     .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.93) contrast(.9); }
 
+
+    /* ---- Durum rozetleri, etiketler, uyarılar ---- */
+    .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 10px;
+      border-radius: 999px; background: rgba(139,151,173,.14); color: var(--muted); white-space: nowrap; }
+    .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .pill.ok { background: rgba(25,211,162,.15); color: var(--live); }
+    .pill.bad { background: rgba(255,90,106,.16); color: var(--danger); }
+    .pill.warn { background: rgba(255,176,32,.15); color: var(--warn); }
+    .pill.bad.pulse::before { animation: blink 1.2s ease-in-out infinite; }
+    @keyframes blink { 50% { opacity: .25; } }
+    .dev-card.off { border-color: rgba(255,90,106,.55); background:
+        radial-gradient(130% 110% at 0% 0%, rgba(255,90,106,.09), transparent 60%), var(--surface-2); }
+    .dev-card .model { font-size: 12.5px; color: var(--muted); margin: -8px 0 12px; }
+    .dev-card .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .dev-card .meta .v.sm { font-size: 13px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+    .chip { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 7px; background: rgba(76,141,255,.14); color: #8db4ff; }
+    .chip .x { margin-left: 5px; opacity: .6; cursor: pointer; }
+    .chip .x:hover { opacity: 1; }
+    .chip.add { background: transparent; border: 1px dashed var(--line); color: var(--muted); cursor: pointer; }
+    .chip.add:hover { border-color: var(--accent); color: var(--text); }
+
+    .alerts { width: 100%; max-width: 720px; margin: 0 auto 18px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+    .alert { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4;
+      border: 1px solid rgba(255,90,106,.4); background: rgba(255,90,106,.1); color: #ffb3bb; }
+    .alert.warn { border-color: rgba(255,176,32,.4); background: rgba(255,176,32,.1); color: #ffd98a; }
+    .alert b { color: var(--text); }
+    .feed { width: 100%; max-width: 720px; margin: 26px auto 0; text-align: left; }
+    .feed-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .feed-row .fd { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: var(--faint); }
+    .feed-row .fd.bad { background: var(--danger); } .feed-row .fd.ok { background: var(--live); } .feed-row .fd.warn { background: var(--warn); }
+    .feed-row .ft { margin-left: auto; color: var(--faint); font-size: 11.5px; white-space: nowrap; padding-left: 10px; }
+
+    .hero.off { border-color: rgba(255,90,106,.55);
+      background: radial-gradient(130% 110% at 0% 0%, rgba(255,90,106,.13), transparent 62%), var(--surface-2); }
+    .hero.off .status { color: var(--danger); }
+    .hero.wait .status { color: var(--warn); }
+    .hero .pills { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0 2px; }
+    .kv { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 4px; }
+    .kv-row { display: flex; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-row .k { color: var(--faint); flex-shrink: 0; }
+    .kv-row .v { text-align: right; font-weight: 500; word-break: break-all; }
+    .icon-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 6px; border-radius: 6px; }
+    .icon-btn:hover { color: var(--text); background: var(--raised); }
+    .stat.low .v { color: var(--danger); }
+
+    .bar-row { display: flex; align-items: center; gap: 9px; font-size: 12px; margin-bottom: 6px; }
+    .bar-row .bl { width: 52px; color: var(--muted); flex-shrink: 0; }
+    .bar-row .bt { flex: 1; height: 9px; background: var(--surface-2); border-radius: 5px; overflow: hidden; border: 1px solid var(--line); }
+    .bar-row .bt i { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+    .bar-row .bv { width: 60px; text-align: right; font-family: var(--display); font-weight: 600; }
+    .geo-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface-2);
+      border: 1px solid var(--line); border-radius: 11px; margin-bottom: 7px; font-size: 13px; }
+    .geo-item .gn { flex: 1; font-weight: 500; } .geo-item .gr { color: var(--faint); font-size: 11.5px; }
+
     @media (max-width: 760px) {
       .app.show { flex-direction: column; }
       .sidebar { width: 100%; max-height: 52%; border-right: none; border-bottom: 1px solid var(--line); }
@@ -263,6 +319,7 @@
     <div class="tabs" id="modeTabs" style="display:none">
       <button class="tab active" id="tab-canli" onclick="setMode('canli')">Canlı</button>
       <button class="tab" id="tab-gun" onclick="setMode('gun')">Günlük hareket</button>
+      <button class="tab" id="tab-ozet" onclick="setMode('ozet')">Özet &amp; Bölgeler</button>
     </div>
   </header>
 
@@ -272,7 +329,9 @@
     <div class="landing-inner">
       <h2>Cihazlarım</h2>
       <p class="lead" id="landingLead">Takip etmek istediğin cihazı seç.</p>
+      <div class="alerts" id="alerts"></div>
       <div class="dev-grid" id="devGrid"></div>
+      <div class="feed" id="feed" style="display:none"><div class="sec-label">Son olaylar</div><div id="feedList"></div></div>
     </div>
   </div>
 
@@ -294,6 +353,9 @@
           </div>
           <div class="status" id="trackBadge">—</div>
           <div class="status-desc" id="statusDesc">Durum alınıyor…</div>
+          <div class="pills" id="heroPills"></div>
+          <div class="kv" id="heroKv"></div>
+          <div class="chips" id="heroTags" style="margin:12px 0 0"></div>
           <div class="place" id="curPlace" style="display:none">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <span id="curAddr">—</span>
@@ -301,7 +363,7 @@
           <button class="track-btn" id="trackBtn" onclick="toggleTracking()">Takip başlat</button>
         </div>
         <div class="stats">
-          <div class="stat"><div class="k">Pil</div><div class="v" id="battery">—</div></div>
+          <div class="stat" id="batStat"><div class="k">Pil</div><div class="v" id="battery">—</div></div>
           <div class="stat"><div class="k">Hız</div><div class="v" id="speed">—</div></div>
           <div class="stat"><div class="k">Doğruluk</div><div class="v" id="accuracy">—</div></div>
         </div>
@@ -344,6 +406,27 @@
         <div class="sec-label">Uğranılan yerler</div>
         <div id="stopsList"><div class="empty">Bir tarih seç.</div></div>
       </div>
+
+      <!-- ÖZET & BÖLGELER -->
+      <div id="panelOzet" style="display:none">
+        <div class="view-toggle" style="margin-bottom:14px">
+          <button class="tab active" id="rg-7" onclick="loadSummary(7)">Son 7 gün</button>
+          <button class="tab" id="rg-30" onclick="loadSummary(30)">Son 30 gün</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="k">Toplam yol</div><div class="v" id="sumKm">—</div></div>
+          <div class="stat"><div class="k">Aktif gün</div><div class="v" id="sumDays">—</div></div>
+          <div class="stat"><div class="k">Durak</div><div class="v" id="sumStops">—</div></div>
+        </div>
+        <div class="sec-label">Günlük mesafe</div>
+        <div id="sumBars" style="margin-bottom:16px"></div>
+        <div class="sec-label">En çok vakit geçirilen yerler</div>
+        <div id="topPlaces" style="margin-bottom:16px"></div>
+        <div class="sec-label">Bölgeler (giriş/çıkış uyarısı)</div>
+        <div id="geoList"></div>
+        <button class="btn" id="geoBtn" onclick="toggleGeoAdd()">Bölge ekle</button>
+        <div class="hint-inline" id="geoHint" style="display:none">Haritada bölgenin merkezine tıkla.</div>
+      </div>
     </div>
     <div id="map"></div>
   </div>
@@ -353,10 +436,12 @@
   <script>
     let ADMIN_KEY = localStorage.getItem("adminKey") || "";
     const TZ_OFFSET = new Date().getTimezoneOffset();
+    let sumRange = 7, geoAdd = false, geoLayers = [], geofences = [];
+    let devicesCache = [], landTimer = null;
     let selId = null, selName = "";
     let map, marker, trail;
     let currentTracking = false, pollTimer = null, mode = "canli", dayView = "rota";
-    let dayLayers = [], addressCache = {};
+    let dayLayers = [], addressCache = {}, ipMarker = null;
     // Simülasyon
     let simSpeed = "normal", simOn = false, simRaf = null, walker = null, dayLatLngs = [];
     const SPEED_MPS = { normal: 1.4, hizli: 2.1, kosar: 3.3 }; // m/s gerçek
@@ -384,51 +469,108 @@
     }
     function setConn(ok) {
       document.getElementById("connPill").classList.toggle("ok", ok);
-      document.getElementById("connText").textContent = ok ? "Bağlı" : "Bağlantı yok";
+      document.getElementById("connText").textContent = ok ? "Sunucu çevrimiçi" : "Sunucuya ulaşılamıyor";
+    }
+
+    // ===== Yardımcılar =====
+    const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const LOW_BAT = 20;
+
+    function connPill(d) {
+      return d.online ? { t: "Bağlı", c: "ok" } : { t: "Bağlı değil", c: "bad pulse" };
+    }
+    function actPill(d) {
+      if (d.activity === "active") return { t: "Aktif · konum geliyor", c: "ok" };
+      if (d.activity === "waiting") return { t: "Konum bekleniyor", c: "warn" };
+      return { t: "Pasif · takip kapalı", c: "" };
+    }
+    function modelText(d) {
+      const i = d.info;
+      if (!i || (!i.brand && !i.model)) return null;
+      const b = i.brand || "";
+      const m = i.model || "";
+      return (m.toLowerCase().startsWith(b.toLowerCase()) ? m : (b + " " + m)).trim();
+    }
+    function lastSeenText(d) { return d.lastSeen ? timeAgo(d.lastSeen) : "hiç bağlanmadı"; }
+    function batOf(d) { return d.lastLocation && d.lastLocation.battery != null ? d.lastLocation.battery : null; }
+    function tagsHtml(d, editable) {
+      const t = (d.tags || []).map((x) => `<span class="chip">${esc(x)}${editable ? `<span class="x" onclick="removeTag(event,'${d.id}','${esc(x).replace(/'/g, "")}')">×</span>` : ""}</span>`).join("");
+      return t + (editable ? `<span class="chip add" onclick="addTag('${d.id}')">+ Etiket</span>` : "");
     }
 
     // ===== Başlangıç / ana sayfa =====
-    async function startApp() { await renderLanding(); }
+    async function startApp() { goHome(); }
 
-    async function renderLanding() {
-      goHome(); // görünümü ana sayfaya al
+    async function loadDevices() {
       try {
         const { devices } = await api("/api/admin/devices");
+        devicesCache = devices || [];
         setConn(true);
-        buildDevMenu(devices);
-        const grid = document.getElementById("devGrid");
-        const lead = document.getElementById("landingLead");
-        if (!devices || devices.length === 0) {
-          lead.textContent = "";
-          grid.innerHTML = '<div class="landing-empty">Henüz kayıtlı cihaz yok. Telefona uygulamayı kurup bağlanınca burada görünür.</div>';
-          return;
-        }
-        lead.textContent = devices.length + " cihaz kayıtlı · birini seç";
-        grid.innerHTML = devices.map((d) => {
-          const on = d.tracking;
-          const bat = d.lastLocation && d.lastLocation.battery != null ? "%" + d.lastLocation.battery : "—";
-          const seen = d.lastSeen ? timeAgo(d.lastSeen) : "bağlanmadı";
-          return `<div class="dev-card ${on ? "on" : ""}" onclick="openDevice('${d.id}','${(d.name||"").replace(/'/g,"")}')">
-            <div class="top"><span class="beacon ${on ? "live" : ""}"></span><span class="nm">${d.name}</span>
-              <span class="badge">${on ? "Canlı" : "Kapalı"}</span></div>
-            <div class="meta">
-              <div class="m"><div class="k">Pil</div><div class="v">${bat}</div></div>
-              <div class="m"><div class="k">Son görülme</div><div class="v" style="font-size:13px">${seen}</div></div>
-            </div>
-            <div class="open"><span>Takibi aç</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg></div>
-          </div>`;
-        }).join("");
+        buildDevMenu(devicesCache);
+        if (!selId) { renderCards(devicesCache); renderAlerts(devicesCache); loadFeed(); }
       } catch (e) { setConn(false); }
+    }
+
+    function renderAlerts(devices) {
+      const out = [];
+      devices.forEach((d) => {
+        const nm = esc(d.name);
+        if (!d.online) out.push(`<div class="alert"><b>${nm}</b> bağlı değil · son sinyal ${lastSeenText(d)}. Uygulama kapalı, telefon kapalı veya internet yok olabilir.</div>`);
+        const bat = batOf(d);
+        if (bat != null && bat <= LOW_BAT) out.push(`<div class="alert warn"><b>${nm}</b> pili düşük: %${bat}</div>`);
+        if (d.tracking && d.online && d.activity === "waiting") out.push(`<div class="alert warn"><b>${nm}</b> takip açık ama konum gelmiyor (GPS/konum servisi kapalı olabilir).</div>`);
+      });
+      document.getElementById("alerts").innerHTML = out.join("");
+    }
+
+    function renderCards(devices) {
+      const grid = document.getElementById("devGrid"), lead = document.getElementById("landingLead");
+      if (!devices.length) {
+        lead.textContent = "";
+        grid.innerHTML = '<div class="landing-empty">Henüz kayıtlı cihaz yok. Telefona uygulamayı kurup açınca burada otomatik görünür.</div>';
+        return;
+      }
+      const onl = devices.filter((d) => d.online).length;
+      lead.textContent = `${devices.length} cihaz · ${onl} bağlı · birini seç`;
+      grid.innerHTML = devices.map((d) => {
+        const c = connPill(d), a = actPill(d), bat = batOf(d), mt = modelText(d);
+        const cls = !d.online ? "off" : (d.activity === "active" ? "on" : "");
+        return `<div class="dev-card ${cls}" onclick="openDevice('${d.id}')">
+          <div class="top"><span class="beacon ${d.online && d.activity === "active" ? "live" : ""}"></span><span class="nm">${esc(d.name)}</span>
+            <span class="badge pill ${c.c}" style="margin-left:auto">${c.t}</span></div>
+          <div class="model">${mt ? esc(mt) : "Model bilgisi bekleniyor"}</div>
+          ${(d.tags || []).length ? `<div class="chips">${tagsHtml(d, false)}</div>` : ""}
+          <div class="pills"><span class="pill ${a.c}">${a.t}</span>${bat != null && bat <= LOW_BAT ? `<span class="pill bad">Düşük pil %${bat}</span>` : ""}</div>
+          <div class="meta">
+            <div class="m"><div class="k">Pil</div><div class="v ${bat != null && bat <= LOW_BAT ? "" : ""}" style="${bat != null && bat <= LOW_BAT ? "color:var(--danger)" : ""}">${bat != null ? "%" + bat : "—"}</div></div>
+            <div class="m"><div class="k">Son görülme</div><div class="v sm">${lastSeenText(d)}</div></div>
+            <div class="m"><div class="k">IP</div><div class="v sm">${esc(d.ip || "—")}</div></div>
+          </div>
+          <div class="open"><span>Takibi aç</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg></div>
+        </div>`;
+      }).join("");
+    }
+
+    async function loadFeed() {
+      try {
+        const { events } = await api("/api/admin/events");
+        const box = document.getElementById("feed");
+        if (!events || !events.length) { box.style.display = "none"; return; }
+        box.style.display = "block";
+        const kind = (t) => (t === "offline" || t === "low-battery") ? "bad" : (t === "online" || t === "new-device") ? "ok" : "warn";
+        document.getElementById("feedList").innerHTML = events.slice(0, 15).map((e) =>
+          `<div class="feed-row"><span class="fd ${kind(e.type)}"></span><span>${esc(e.text)}</span><span class="ft">${timeAgo(e.ts)}</span></div>`).join("");
+      } catch (e) {}
     }
 
     function buildDevMenu(devices) {
       const menu = document.getElementById("devMenu");
       if (!devices || devices.length === 0) { menu.innerHTML = '<div class="dev-menu-empty">Kayıtlı cihaz yok</div>'; return; }
       menu.innerHTML = devices.map((d) => `
-        <div class="dev-menu-item" onclick="openDevice('${d.id}','${(d.name||"").replace(/'/g,"")}')">
-          <span class="beacon ${d.tracking ? "live" : ""}"></span>
-          <div><div class="nm">${d.name}</div><div class="st">${d.tracking ? "Canlı" : "Kapalı"} · ${d.lastSeen ? timeAgo(d.lastSeen) : "bağlanmadı"}</div></div>
+        <div class="dev-menu-item" onclick="openDevice('${d.id}')">
+          <span class="beacon ${d.online && d.activity === "active" ? "live" : ""}" style="${d.online ? "" : "background:var(--danger)"}"></span>
+          <div><div class="nm">${esc(d.name)}</div><div class="st" style="${d.online ? "" : "color:var(--danger)"}">${d.online ? "Bağlı" : "Bağlı değil"} · ${actPill(d).t.split(" ·")[0]} · ${lastSeenText(d)}</div></div>
         </div>`).join("");
     }
     function toggleDevMenu(e) { e.stopPropagation(); document.getElementById("devSelect").classList.toggle("open"); }
@@ -436,26 +578,18 @@
 
     function goHome() {
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-      stopSim(); exitPick();
+      stopSim(); exitPick(); clearGeo(); geoAdd = false;
       selId = null;
       document.getElementById("app").classList.remove("show");
       document.getElementById("landing").style.display = "flex";
       document.getElementById("modeTabs").style.display = "none";
       document.getElementById("devSelLabel").textContent = "Cihazlar";
-      renderLanding;
-      // cihaz listesini tazele
-      api("/api/admin/devices").then(({ devices }) => { buildDevMenu(devices); refreshLandingCards(devices); setConn(true); }).catch(() => {});
-    }
-    function refreshLandingCards(devices) {
-      // yalnızca ana sayfadaysak kartları yenile
-      if (document.getElementById("landing").style.display === "none") return;
-      const grid = document.getElementById("devGrid");
-      if (devices && devices.length) {
-        document.getElementById("landingLead").textContent = devices.length + " cihaz kayıtlı · birini seç";
-      }
+      loadDevices();
+      if (!landTimer) landTimer = setInterval(() => { if (!selId) loadDevices(); }, 8000);
     }
 
     function openDevice(id, name) {
+      if (!name) { const d = devicesCache.find((x) => x.id === id); name = d ? d.name : id; }
       selId = id; selName = name;
       document.getElementById("devSelect").classList.remove("open");
       document.getElementById("landing").style.display = "none";
@@ -478,15 +612,16 @@
 
     function setMode(m) {
       mode = m;
-      document.getElementById("tab-canli").classList.toggle("active", m === "canli");
-      document.getElementById("tab-gun").classList.toggle("active", m === "gun");
-      document.getElementById("panelCanli").style.display = m === "canli" ? "block" : "none";
-      document.getElementById("panelGun").style.display = m === "gun" ? "block" : "none";
-      clearDayLayers(); stopSim(); exitPick();
-      if (marker && m === "gun") { map.removeLayer(marker); marker = null; }
-      if (trail && m === "gun") { map.removeLayer(trail); trail = null; }
+      ["canli", "gun", "ozet"].forEach((k) => {
+        document.getElementById("tab-" + k).classList.toggle("active", m === k);
+        document.getElementById("panel" + k[0].toUpperCase() + k.slice(1)).style.display = m === k ? "block" : "none";
+      });
+      clearDayLayers(); stopSim(); exitPick(); clearGeo(); geoAdd = false;
+      if (m !== "canli") removeIpMarker();
+      if (marker && m !== "canli") { map.removeLayer(marker); marker = null; }
+      if (trail && m !== "canli") { map.removeLayer(trail); trail = null; }
       setTimeout(() => map.invalidateSize(), 100);
-      if (m === "canli") refresh(); else loadDays();
+      if (m === "canli") refresh(); else if (m === "gun") loadDays(); else { loadSummary(sumRange); loadGeofences(); }
     }
     function setDayView(v) {
       dayView = v;
@@ -503,6 +638,7 @@
       try {
         const { devices } = await api("/api/admin/devices");
         setConn(true);
+        devicesCache = devices; buildDevMenu(devices);
         const d = devices.find((x) => x.id === selId);
         if (!d) return;
         renderDevice(d);
@@ -515,32 +651,89 @@
 
     function renderDevice(d) {
       currentTracking = d.tracking;
-      document.getElementById("devName").textContent = d.name;
+      document.getElementById("devName").innerHTML = esc(d.name) + ' <button class="icon-btn" title="Adı değiştir" onclick="renameDevice()">✎</button>';
       const hero = document.getElementById("hero"), badge = document.getElementById("trackBadge");
       const desc = document.getElementById("statusDesc"), btn = document.getElementById("trackBtn");
       const headDot = document.getElementById("headDot"), heroDot = document.getElementById("heroDot");
-      if (d.tracking) {
-        hero.classList.add("on"); badge.textContent = "Canlı"; desc.textContent = "Konum şu anda paylaşılıyor.";
-        btn.textContent = "Takibi durdur"; btn.className = "track-btn stop";
-        headDot.className = "beacon live"; heroDot.className = "beacon live";
+      const c = connPill(d), a = actPill(d);
+      hero.className = "hero " + (!d.online ? "off" : d.activity === "active" ? "on" : d.activity === "waiting" ? "wait" : "");
+      if (!d.online) {
+        badge.textContent = "Bağlı değil";
+        desc.textContent = `Son sinyal ${lastSeenText(d)}. Uygulama kapalı, telefon kapalı veya internet yok olabilir.`;
+        heroDot.className = "beacon"; heroDot.style.background = "var(--danger)"; headDot.className = "beacon";
+      } else if (d.activity === "active") {
+        badge.textContent = "Aktif"; desc.textContent = "Telefon bağlı, konum şu anda paylaşılıyor.";
+        heroDot.className = "beacon live"; heroDot.style.background = ""; headDot.className = "beacon live";
+      } else if (d.activity === "waiting") {
+        badge.textContent = "Konum bekleniyor"; desc.textContent = "Telefon bağlı ve takip açık, ancak henüz yeni konum gelmedi (GPS/konum servisi kapalı olabilir).";
+        heroDot.className = "beacon"; heroDot.style.background = "var(--warn)"; headDot.className = "beacon";
       } else {
-        hero.classList.remove("on"); badge.textContent = "Kapalı"; desc.textContent = "Konum paylaşılmıyor. Pil ve gizlilik korunuyor.";
-        btn.textContent = "Takip başlat"; btn.className = "track-btn";
-        headDot.className = "beacon"; heroDot.className = "beacon";
+        badge.textContent = "Pasif"; desc.textContent = "Telefon bağlı. Takip kapalı, konum paylaşılmıyor (pil ve gizlilik korunuyor).";
+        heroDot.className = "beacon"; heroDot.style.background = ""; headDot.className = "beacon";
       }
-      document.getElementById("lastSeen").textContent = d.lastSeen ? timeAgo(d.lastSeen) : "bağlanmadı";
-      const loc = d.lastLocation, place = document.getElementById("curPlace");
+      btn.textContent = d.tracking ? "Takibi durdur" : "Takip başlat";
+      btn.className = "track-btn" + (d.tracking ? " halt" : "");
+
+      document.getElementById("heroPills").innerHTML =
+        `<span class="pill ${c.c}">${c.t}</span><span class="pill ${a.c}">${a.t}</span>` +
+        (batOf(d) != null && batOf(d) <= LOW_BAT ? `<span class="pill bad">Düşük pil</span>` : "");
+      const mt = modelText(d), ipl = d.ipLocation;
+      const ipPlace = ipl ? [ipl.city, ipl.region].filter(Boolean).join(", ") : "";
+      document.getElementById("heroKv").innerHTML = `
+        <div class="kv-row"><span class="k">Cihaz modeli</span><span class="v">${mt ? esc(mt) : '<span style="color:var(--faint)">bilinmiyor (yeni uygulama gerekli)</span>'}</span></div>
+        ${d.info && d.info.os ? `<div class="kv-row"><span class="k">Sistem</span><span class="v">${esc(d.info.os)}</span></div>` : ""}
+        <div class="kv-row"><span class="k">IP adresi</span><span class="v">${esc(d.ip || "—")}${ipPlace ? `<br><span style="color:var(--faint);font-weight:400">${esc(ipPlace)}</span>` : ""}</span></div>
+        <div class="kv-row"><span class="k">Cihaz kimliği</span><span class="v" style="color:var(--faint)">${esc(d.id)}</span></div>`;
+      document.getElementById("heroTags").innerHTML = tagsHtml(d, true);
+      document.getElementById("batStat").classList.toggle("low", batOf(d) != null && batOf(d) <= LOW_BAT);
+      document.getElementById("lastSeen").textContent = lastSeenText(d);
+      const loc = d.lastLocation, ipLoc = d.ipLocation, place = document.getElementById("curPlace");
+      const freshGps = loc && (Date.now() - loc.ts < 10 * 60 * 1000);
+
+      // Stat kutuları (GPS verisinden)
       if (loc) {
         document.getElementById("battery").innerHTML = loc.battery != null ? loc.battery + "<small>%</small>" : "—";
         document.getElementById("speed").innerHTML = loc.speed != null ? Math.round(loc.speed * 3.6) + " <small>km/s</small>" : "—";
         document.getElementById("accuracy").innerHTML = loc.accuracy != null ? "±" + Math.round(loc.accuracy) + " <small>m</small>" : "—";
-        if (mode === "canli") placeMarker(loc);
-        place.style.display = "flex"; resolveAddress(loc.lat, loc.lon, "curAddr");
       } else {
-        place.style.display = "none";
         ["battery","speed","accuracy"].forEach(i => document.getElementById(i).textContent = "—");
       }
+
+      if (mode === "canli") {
+        if (loc) placeMarker(loc);
+        // Taze GPS yoksa IP tabanlı yaklaşık konumu göster
+        if (!freshGps && ipLoc) drawIpMarker(ipLoc); else removeIpMarker();
+      }
+
+      // Konum satırı: öncelik taze GPS > IP yaklaşık > son bilinen GPS
+      const addrEl = document.getElementById("curAddr");
+      if (freshGps) {
+        place.style.display = "flex"; resolveAddress(loc.lat, loc.lon, "curAddr");
+      } else if (ipLoc) {
+        place.style.display = "flex";
+        const city = [ipLoc.city, ipLoc.region].filter(Boolean).join(", ") || "bilinmiyor";
+        addrEl.innerHTML = `${city} <span style="color:var(--warn)">· yaklaşık (IP)</span>`;
+      } else if (loc) {
+        place.style.display = "flex";
+        resolveAddress(loc.lat, loc.lon, "curAddr");
+        setTimeout(() => { const e = document.getElementById("curAddr"); if (e && !e.innerHTML.includes("son bilinen")) e.innerHTML += ' <span style="color:var(--faint)">· son bilinen</span>'; }, 1400);
+      } else {
+        place.style.display = "none";
+      }
     }
+
+    function drawIpMarker(ipLoc) {
+      removeIpMarker();
+      const pos = [ipLoc.lat, ipLoc.lon];
+      // Belirsizliği gösteren geniş kehribar daire + merkez nokta
+      ipMarker = L.layerGroup([
+        L.circle(pos, { radius: 3000, color: "#ffb020", weight: 1.5, fillColor: "#ffb020", fillOpacity: .08, dashArray: "5,6" }),
+        L.circleMarker(pos, { radius: 7, color: "#ffb020", weight: 2, fillColor: "#ffb020", fillOpacity: .9 })
+          .bindPopup("Yaklaşık konum (IP tabanlı)<br>Şehir seviyesi, kesin değildir.")
+      ]).addTo(map);
+      if (!marker) map.setView(pos, 11);
+    }
+    function removeIpMarker() { if (ipMarker) { map.removeLayer(ipMarker); ipMarker = null; } }
     function placeMarker(loc) {
       const pos = [loc.lat, loc.lon];
       if (!marker) { marker = L.circleMarker(pos, { radius: 9, color: "#19d3a2", weight: 3, fillColor: "#19d3a2", fillOpacity: .9 }).addTo(map); map.setView(pos, 16); }
@@ -563,7 +756,8 @@
     }
     async function toggleTracking() {
       const next = !currentTracking;
-      if (next && !confirm("Takibi başlat?\n\nTelefon, aktifleştikten sonra konumunu göndermeye başlayacak.")) return;
+      const dd = devicesCache.find((x) => x.id === selId);
+      if (next && !confirm("Takibi başlat?\n\nTelefon, aktifleştikten sonra konumunu göndermeye başlayacak." + (dd && !dd.online ? "\n\nNot: Telefon şu an bağlı değil; bağlanınca başlayacak." : ""))) return;
       await api(`/api/admin/devices/${selId}/tracking`, { method: "POST", body: JSON.stringify({ enabled: next }) });
       refresh();
     }
@@ -711,6 +905,7 @@
       return best;
     }
     async function onMapClick(e) {
+      if (geoAdd) { addGeoAt(e.latlng); return; }
       if (!pickMode) return;
       const idx = nearestRouteIndex(e.latlng);
       const pos = dayLatLngs[idx];
@@ -755,6 +950,89 @@
         const diff = realDist - straight;
         document.getElementById("cmpDiff").textContent = fmtDist(Math.abs(diff));
       }
+    }
+
+    // ===== Etiket / isim =====
+    async function addTag(id) {
+      const d = devicesCache.find((x) => x.id === id); if (!d) return;
+      const t = (prompt("Etiket yaz (örn. Anne, Okul telefonu):") || "").trim();
+      if (!t) return;
+      await api(`/api/admin/devices/${id}/tags`, { method: "POST", body: JSON.stringify({ tags: [...(d.tags || []), t] }) });
+      selId ? refresh() : loadDevices();
+    }
+    async function removeTag(ev, id, tag) {
+      ev.stopPropagation();
+      const d = devicesCache.find((x) => x.id === id); if (!d) return;
+      await api(`/api/admin/devices/${id}/tags`, { method: "POST", body: JSON.stringify({ tags: (d.tags || []).filter((x) => x.replace(/'/g, "") !== tag) }) });
+      refresh();
+    }
+    async function renameDevice() {
+      const d = devicesCache.find((x) => x.id === selId); if (!d) return;
+      const n = (prompt("Cihaz adı:", d.name) || "").trim();
+      if (!n) return;
+      await api(`/api/admin/devices/${selId}/name`, { method: "POST", body: JSON.stringify({ name: n }) });
+      selName = n; document.getElementById("devSelLabel").textContent = n; refresh();
+    }
+
+    // ===== ÖZET =====
+    async function loadSummary(days) {
+      sumRange = days;
+      document.getElementById("rg-7").classList.toggle("active", days === 7);
+      document.getElementById("rg-30").classList.toggle("active", days === 30);
+      try {
+        const r = await api(`/api/admin/devices/${selId}/summary?days=${days}&tzOffsetMin=${TZ_OFFSET}`);
+        document.getElementById("sumKm").innerHTML = r.totalKm + " <small>km</small>";
+        document.getElementById("sumDays").innerHTML = r.activeDays + " <small>/ " + days + "</small>";
+        document.getElementById("sumStops").textContent = r.days.reduce((a, d) => a + d.stops, 0);
+        const max = Math.max(1, ...r.days.map((d) => d.distanceKm));
+        document.getElementById("sumBars").innerHTML = r.days.slice(-14).map((d) => {
+          const [, m, dd] = d.date.split("-");
+          return `<div class="bar-row"><span class="bl">${dd}.${m}</span><span class="bt"><i style="width:${Math.round(d.distanceKm / max * 100)}%"></i></span><span class="bv">${d.distanceKm} km</span></div>`;
+        }).join("");
+        const tp = document.getElementById("topPlaces");
+        if (!r.topPlaces.length) tp.innerHTML = '<div class="empty">Bu aralıkta uzun süreli durak yok.</div>';
+        else {
+          tp.innerHTML = r.topPlaces.map((p, i) => `<div class="stop" onclick="map.setView([${p.lat},${p.lon}],16)">
+            <div class="shead"><span class="stime">${i + 1}. yer</span><span class="sdur">${fmtDur(p.minutes * 60)} · ${p.visits} ziyaret</span></div>
+            <div class="saddr" id="tp-${i}">Adres alınıyor…</div></div>`).join("");
+          r.topPlaces.forEach((p, i) => setTimeout(() => resolveAddress(p.lat, p.lon, "tp-" + i), i * 1100));
+        }
+      } catch (e) {}
+    }
+
+    // ===== BÖLGELER (geofence) =====
+    function clearGeo() { geoLayers.forEach((l) => map && map.removeLayer(l)); geoLayers = []; }
+    async function loadGeofences() {
+      try {
+        const r = await api("/api/admin/geofences");
+        geofences = (r.geofences || []).filter((g) => !g.deviceId || g.deviceId === selId);
+        clearGeo();
+        geofences.forEach((g) => {
+          geoLayers.push(L.circle([g.lat, g.lon], { radius: g.radius, color: "#ffb020", weight: 2, fillColor: "#ffb020", fillOpacity: .1 }).addTo(map).bindTooltip(esc(g.name), { permanent: true, direction: "center" }));
+        });
+        if (geofences.length) map.fitBounds(L.featureGroup(geoLayers).getBounds(), { padding: [60, 60], maxZoom: 15 });
+        document.getElementById("geoList").innerHTML = geofences.length ? geofences.map((g) =>
+          `<div class="geo-item"><span class="gn">${esc(g.name)}</span><span class="gr">${g.radius} m</span>
+           <button class="icon-btn" onclick="delGeo('${g.id}')">Sil</button></div>`).join("") : '<div class="empty">Henüz bölge yok. Ev, okul gibi yerler ekle; girip çıkınca uyarı alırsın.</div>';
+      } catch (e) {}
+    }
+    function toggleGeoAdd() {
+      geoAdd = !geoAdd;
+      document.getElementById("geoBtn").textContent = geoAdd ? "İptal" : "Bölge ekle";
+      document.getElementById("geoBtn").classList.toggle("primary", geoAdd);
+      document.getElementById("geoHint").style.display = geoAdd ? "block" : "none";
+    }
+    async function addGeoAt(latlng) {
+      const name = (prompt("Bölge adı (örn. Ev, Okul):") || "").trim();
+      if (!name) return;
+      const radius = parseInt(prompt("Yarıçap (metre):", "150")) || 150;
+      await api("/api/admin/geofences", { method: "POST", body: JSON.stringify({ name, lat: latlng.lat, lon: latlng.lng, radius, deviceId: selId }) });
+      toggleGeoAdd(); loadGeofences();
+    }
+    async function delGeo(id) {
+      if (!confirm("Bu bölge silinsin mi?")) return;
+      await api("/api/admin/geofences/" + id, { method: "DELETE" });
+      loadGeofences();
     }
 
     // ===== Adres (ters-geocoding) =====
