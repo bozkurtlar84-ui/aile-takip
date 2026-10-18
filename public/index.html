@@ -5,127 +5,229 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aile Cihaz Takip Paneli</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f1420;
-      --panel: #1a2130;
-      --panel-2: #222c40;
-      --line: #2e3a52;
-      --text: #e7ecf5;
-      --muted: #8b97ad;
-      --accent: #4f8cff;
-      --accent-2: #2f6fe0;
-      --green: #35c88a;
-      --red: #e5484d;
-      --amber: #f2b64c;
+      --bg: #0b1220; --surface: #111a2c; --surface-2: #17223a; --raised: #1d2a47;
+      --line: #273653; --text: #eaf0fb; --muted: #8694ad; --faint: #5d6b86;
+      --live: #19d3a2; --accent: #4c8dff; --warn: #ffb020; --danger: #ff5a6a;
+      --ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --display: "Space Grotesk", var(--ui);
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 20px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--line);
-    }
-    header h1 { font-size: 17px; margin: 0; font-weight: 600; flex: 1; }
-    header .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
-    header .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: var(--ui); background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; height: 100vh; -webkit-font-smoothing: antialiased; }
 
-    .tabs { display: flex; gap: 4px; }
-    .tab {
-      padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
-      color: var(--muted); border: 1px solid transparent;
-    }
-    .tab.active { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+    /* ---- Üst bar ---- */
+    header { display: flex; align-items: center; gap: 14px; padding: 0 20px; height: 60px;
+      flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 11px; cursor: pointer; }
+    .beacon { position: relative; width: 11px; height: 11px; border-radius: 50%; background: var(--faint); flex-shrink: 0; }
+    .beacon.live { background: var(--live); }
+    .beacon.live::after { content: ""; position: absolute; inset: -5px; border-radius: 50%;
+      border: 2px solid var(--live); animation: ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+    @keyframes ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .beacon.live::after, .walker { animation: none !important; } }
+    .brand h1 { font-family: var(--display); font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+    .brand .sub { font-size: 11px; color: var(--faint); margin-top: 1px; }
+    .spacer { flex: 1; }
 
-    .main { flex: 1; display: flex; min-height: 0; }
-    .sidebar {
-      width: 360px; background: var(--panel); border-right: 1px solid var(--line);
-      display: flex; flex-direction: column; overflow-y: auto;
-    }
-    #map { flex: 1; min-height: 0; background: #0b0f17; }
+    /* Cihaz seçici (üst bar) */
+    .dev-select { position: relative; }
+    .dev-select-btn { display: flex; align-items: center; gap: 9px; padding: 8px 13px; border-radius: 10px;
+      background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-family: var(--ui);
+      font-size: 13.5px; font-weight: 500; cursor: pointer; }
+    .dev-select-btn:hover { border-color: var(--accent); }
+    .dev-select-btn .chev { color: var(--muted); transition: transform .15s; }
+    .dev-select.open .chev { transform: rotate(180deg); }
+    .dev-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 240px; background: var(--surface);
+      border: 1px solid var(--line); border-radius: 12px; padding: 6px; z-index: 500; display: none;
+      box-shadow: 0 12px 32px rgba(0,0,0,.4); }
+    .dev-select.open .dev-menu { display: block; }
+    .dev-menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 9px; cursor: pointer; }
+    .dev-menu-item:hover { background: var(--surface-2); }
+    .dev-menu-item .nm { font-size: 13.5px; font-weight: 500; }
+    .dev-menu-item .st { font-size: 11px; color: var(--faint); margin-top: 1px; }
+    .dev-menu-empty { padding: 12px; color: var(--faint); font-size: 12.5px; }
 
-    .card {
-      margin: 14px; background: var(--panel-2); border: 1px solid var(--line);
-      border-radius: 12px; padding: 16px;
-    }
-    .device-name { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
-    .status-row {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--muted); margin-bottom: 14px;
-    }
-    .badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .badge.on { background: rgba(53,200,138,.15); color: var(--green); }
-    .badge.off { background: rgba(139,151,173,.15); color: var(--muted); }
+    .conn { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted);
+      padding: 6px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+    .conn .cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+    .conn.ok .cdot { background: var(--live); }
 
-    button.track {
-      width: 100%; padding: 13px; border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 600; cursor: pointer; transition: .15s; color: #fff;
-    }
-    button.track.start { background: var(--accent); }
-    button.track.start:hover { background: var(--accent-2); }
-    button.track.stop { background: var(--red); }
-    button.track.stop:hover { filter: brightness(.9); }
+    .tabs { display: flex; gap: 2px; background: var(--surface-2); padding: 3px; border-radius: 10px; border: 1px solid var(--line); }
+    .tab { padding: 7px 15px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer;
+      color: var(--muted); border: none; background: transparent; transition: color .12s; }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--raised); color: var(--text); }
 
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-    .info-grid .item { background: var(--panel); border-radius: 8px; padding: 10px; }
-    .info-grid .label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
-    .info-grid .value { font-size: 14px; font-weight: 600; }
+    /* ================= ANA SAYFA (haritasız) ================= */
+    .landing { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }
+    .landing .rings { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: .5; }
+    .landing .rings span { position: absolute; left: 50%; top: 42%; border: 1px solid var(--accent);
+      border-radius: 50%; transform: translate(-50%,-50%); animation: radar 4.5s ease-out infinite; opacity: 0; }
+    .landing .rings span:nth-child(2) { animation-delay: 1.5s; }
+    .landing .rings span:nth-child(3) { animation-delay: 3s; }
+    @keyframes radar { 0% { width: 60px; height: 60px; opacity: .6; } 100% { width: 620px; height: 620px; opacity: 0; } }
+    .landing-inner { position: relative; z-index: 1; width: 100%; max-width: 720px; }
+    .landing h2 { font-family: var(--display); font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 6px; }
+    .landing .lead { color: var(--muted); font-size: 15px; margin: 0 0 30px; }
+    .dev-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; text-align: left; }
+    .dev-card { background:
+        radial-gradient(130% 110% at 0% 0%, rgba(76,141,255,.06), transparent 60%), var(--surface-2);
+      border: 1px solid var(--line); border-radius: 16px; padding: 20px; cursor: pointer;
+      transition: border-color .14s, transform .08s; }
+    .dev-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .dev-card.on { border-color: rgba(25,211,162,.4); }
+    .dev-card .top { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; }
+    .dev-card .nm { font-size: 17px; font-weight: 600; }
+    .dev-card .badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+      background: rgba(139,151,173,.14); color: var(--muted); }
+    .dev-card.on .badge { background: rgba(25,211,162,.15); color: var(--live); }
+    .dev-card .meta { display: flex; gap: 18px; margin-bottom: 18px; }
+    .dev-card .meta .m .k { font-size: 11px; color: var(--faint); margin-bottom: 3px; }
+    .dev-card .meta .m .v { font-family: var(--display); font-size: 16px; font-weight: 600; }
+    .dev-card .open { display: flex; align-items: center; justify-content: space-between; font-size: 13px;
+      font-weight: 600; color: var(--accent); }
+    .landing-empty { color: var(--faint); font-size: 14px; line-height: 1.6; background: var(--surface-2);
+      border: 1px solid var(--line); border-radius: 14px; padding: 26px; }
 
-    .date-bar { margin: 0 14px 10px; display: flex; gap: 8px; align-items: center; }
-    .date-bar select {
-      flex: 1; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line);
-      background: var(--panel-2); color: var(--text); font-size: 13px;
-    }
-    .section-title {
-      margin: 10px 14px 6px; font-size: 12px; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .5px;
-    }
-    .stop-item {
-      margin: 0 14px 8px; padding: 12px; background: var(--panel-2);
-      border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
-    }
-    .stop-item:hover { border-color: var(--accent); }
-    .stop-item .st-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .stop-item .st-time { font-size: 14px; font-weight: 600; }
-    .stop-item .st-dur { font-size: 12px; color: var(--amber); font-weight: 600; }
-    .stop-item .st-addr { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    /* ================= TAKİP GÖRÜNÜMÜ ================= */
+    .app { flex: 1; display: none; min-height: 0; }
+    .app.show { display: flex; }
+    .sidebar { width: 390px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--line);
+      overflow-y: auto; padding: 18px; }
+    #map { flex: 1; min-height: 0; background: #0a0f1a; }
 
-    .history-item {
-      margin: 0 14px 6px; padding: 10px 12px; background: var(--panel-2);
-      border: 1px solid var(--line); border-radius: 8px; font-size: 13px; cursor: pointer;
-    }
-    .history-item:hover { border-color: var(--accent); }
-    .history-item .time { color: var(--muted); font-size: 11px; }
-    .empty { margin: 0 14px; color: var(--muted); font-size: 13px; }
+    .back { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px;
+      background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 14px; font-family: var(--ui); }
+    .back:hover { color: var(--text); }
 
-    .login { position: fixed; inset: 0; background: var(--bg); display: flex;
-      align-items: center; justify-content: center; z-index: 1000; }
-    .login .box { background: var(--panel); border: 1px solid var(--line);
-      border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; }
-    .login h2 { margin: 0 0 6px; font-size: 20px; }
-    .login p { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
-    .login input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
-      background: var(--panel-2); color: var(--text); font-size: 14px; margin-bottom: 12px; }
-    .login button { width: 100%; padding: 12px; border: none; border-radius: 10px;
-      background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
-    .login .err { color: var(--red); font-size: 13px; margin-bottom: 10px; min-height: 18px; }
-    .muted-note { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.5; }
+    .hero { border-radius: 16px; padding: 20px; margin-bottom: 14px; border: 1px solid var(--line);
+      background: radial-gradient(120% 100% at 0% 0%, rgba(76,141,255,.07), transparent 60%), var(--surface-2);
+      position: relative; overflow: hidden; }
+    .hero.on { border-color: rgba(25,211,162,.35);
+      background: radial-gradient(130% 110% at 0% 0%, rgba(25,211,162,.12), transparent 62%), var(--surface-2); }
+    .hero .dev { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+    .hero .dev-name { font-size: 15px; font-weight: 600; }
+    .hero .seen { font-size: 12px; color: var(--faint); margin-left: auto; }
+    .hero .status { font-family: var(--display); font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1; margin-bottom: 7px; }
+    .hero.on .status { color: var(--live); }
+    .hero .status-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .hero .place { display: flex; align-items: flex-start; gap: 8px; margin-top: 15px; padding-top: 15px;
+      border-top: 1px solid var(--line); font-size: 13.5px; color: var(--text); line-height: 1.45; min-height: 20px; }
+    .hero .place svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
 
-    .stop-marker-label {
-      background: var(--accent); color: #fff; border-radius: 50%;
-      width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 13px; border: 2px solid #fff;
+    .track-btn { width: 100%; margin-top: 16px; padding: 14px; border: none; border-radius: 12px;
+      font-family: var(--ui); font-size: 15px; font-weight: 600; cursor: pointer; color: #06281f;
+      background: var(--live); transition: filter .12s, transform .05s; }
+    .track-btn:hover { filter: brightness(1.06); }
+    .track-btn:active { transform: translateY(1px); }
+    .track-btn.stop { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+    .track-btn.stop:hover { background: rgba(255,90,106,.08); filter: none; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 16px; }
+    .stat { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .stat .k { font-size: 11px; color: var(--faint); margin-bottom: 5px; }
+    .stat .v { font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+    .stat .v small { font-size: 11px; color: var(--muted); font-family: var(--ui); font-weight: 400; }
+
+    .sec-label { font-size: 12px; font-weight: 600; color: var(--muted); margin: 4px 0 10px;
+      display: flex; align-items: center; gap: 8px; }
+    .sec-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+    .move { display: flex; align-items: center; gap: 11px; padding: 10px 11px; background: var(--surface-2);
+      border: 1px solid var(--line); border-radius: 11px; margin-bottom: 7px; cursor: pointer; transition: border-color .12s; }
+    .move:hover { border-color: var(--accent); }
+    .move .tick { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; opacity: .7; }
+    .move .mtext { flex: 1; min-width: 0; }
+    .move .mcoord { font-size: 12.5px; color: var(--text); }
+    .move .mtime { font-size: 11px; color: var(--faint); margin-top: 1px; }
+
+    .daybar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    select#daySelect { width: 100%; padding: 11px 12px; border-radius: 11px; border: 1px solid var(--line);
+      background: var(--surface-2); color: var(--text); font-family: var(--ui); font-size: 13.5px; font-weight: 500;
+      appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238694ad' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; }
+    .view-toggle { display: flex; gap: 3px; background: var(--surface-2); padding: 3px; border-radius: 11px; border: 1px solid var(--line); }
+    .view-toggle .tab { flex: 1; text-align: center; }
+
+    /* Simülasyon & en kısa yol kutusu */
+    .tools { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .tools .tt { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 11px; }
+    .speed-row { display: flex; gap: 3px; background: var(--surface); padding: 3px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 10px; }
+    .speed-row .tab { flex: 1; text-align: center; padding: 7px 4px; font-size: 12.5px; }
+    .btn { width: 100%; padding: 11px; border-radius: 10px; font-family: var(--ui); font-size: 13.5px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--line); background: var(--raised); color: var(--text); transition: filter .12s; }
+    .btn:hover { filter: brightness(1.12); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #04142e; }
+    .btn.teal { background: var(--live); border-color: var(--live); color: #06281f; }
+    .btn + .btn { margin-top: 8px; }
+    .btn:disabled { opacity: .5; cursor: default; filter: none; }
+    .sim-eta { font-size: 12.5px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    .sim-eta b { color: var(--text); font-family: var(--display); }
+    .hint-inline { font-size: 12px; color: var(--faint); margin-top: 8px; line-height: 1.5; }
+    .cmp { margin-top: 11px; display: none; }
+    .cmp.show { display: block; }
+    .cmp-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .cmp-row:last-child { border-bottom: none; }
+    .cmp-row .cv { font-family: var(--display); font-weight: 600; }
+    .cmp-row.save .cv { color: var(--live); }
+
+    .stop { position: relative; padding: 13px 14px 13px 16px; margin-bottom: 9px; background: var(--surface-2);
+      border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: border-color .12s; }
+    .stop::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 3px; background: var(--warn); }
+    .stop:hover { border-color: var(--warn); }
+    .stop .shead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+    .stop .stime { font-size: 14px; font-weight: 600; }
+    .stop .sdur { font-family: var(--display); font-size: 12px; color: var(--warn); font-weight: 600; }
+    .stop .saddr { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+
+    .empty { color: var(--faint); font-size: 13px; padding: 4px 2px; line-height: 1.5; }
+
+    /* Giriş */
+    .login { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(130% 100% at 50% 0%, #10203c, var(--bg)); padding: 20px; }
+    .login .box { width: 380px; max-width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 34px; }
+    .login .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .login .logo .beacon { background: var(--live); }
+    .login h2 { font-family: var(--display); margin: 0; font-size: 20px; font-weight: 600; }
+    .login p { margin: 0 0 22px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+    .login input { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--surface-2); color: var(--text); font-size: 14px; font-family: var(--ui); margin-bottom: 12px; }
+    .login input:focus { outline: none; border-color: var(--accent); }
+    .login button { width: 100%; padding: 13px; border: none; border-radius: 12px; background: var(--live);
+      color: #06281f; font-size: 15px; font-weight: 600; font-family: var(--ui); cursor: pointer; }
+    .login button:hover { filter: brightness(1.06); }
+    .login .err { color: var(--danger); font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+    .login .hint { color: var(--faint); font-size: 12px; margin-top: 16px; line-height: 1.5; }
+
+    /* Harita işaretleri */
+    .stop-pin { background: var(--warn); color: #3a2600; border-radius: 50% 50% 50% 2px; transform: rotate(45deg);
+      width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+    .stop-pin span { transform: rotate(-45deg); font-family: var(--display); font-weight: 700; font-size: 12px; }
+    .pick-pin { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); border: 3px solid #fff;
+      display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+    .walker-wrap { width: 40px; height: 40px; }
+    .walker { width: 40px; height: 40px; border-radius: 50%; background: var(--live);
+      border: 3px solid #fff; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,.5); animation: bob .5s ease-in-out infinite alternate; }
+    @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+    .walker.run { animation-duration: .25s; }
+    .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--line) !important; }
+    .leaflet-bar { border: 1px solid var(--line) !important; }
+
+    @media (max-width: 760px) {
+      .app.show { flex-direction: column; }
+      .sidebar { width: 100%; max-height: 52%; border-right: none; border-bottom: 1px solid var(--line); }
+      header { gap: 8px; padding: 0 12px; }
+      .brand .sub, .conn { display: none; }
+      .landing h2 { font-size: 26px; }
     }
   </style>
 </head>
@@ -133,61 +235,114 @@
 
   <div class="login" id="login">
     <div class="box">
-      <h2>Aile Takip Paneli</h2>
-      <p>Devam etmek için yönetici anahtarını gir. (Sunucu ilk açıldığında konsolda yazar.)</p>
+      <div class="logo"><span class="beacon"></span><h2>Aile Takip</h2></div>
+      <p>Panele girmek için yönetici anahtarını yaz. Anahtar, sunucu ilk açıldığında ekranda gösterilir.</p>
       <div class="err" id="loginErr"></div>
       <input type="password" id="adminKeyInput" placeholder="Yönetici anahtarı" autocomplete="off" />
-      <button onclick="doLogin()">Giriş Yap</button>
-      <div class="muted-note">Anahtar bu tarayıcıda saklanır, her açılışta tekrar sormaz.</div>
+      <button onclick="doLogin()">Giriş yap</button>
+      <div class="hint">Anahtar yalnızca bu tarayıcıda saklanır, her açılışta tekrar sormaz.</div>
     </div>
   </div>
 
   <header>
-    <div class="dot" id="headDot"></div>
-    <h1>Aile Cihaz Takip Paneli</h1>
-    <div class="tabs">
-      <div class="tab active" id="tab-canli" onclick="setMode('canli')">Canlı</div>
-      <div class="tab" id="tab-gun" onclick="setMode('gun')">Günlük Hareket</div>
+    <div class="brand" onclick="goHome()">
+      <span class="beacon" id="headDot"></span>
+      <div><h1>Aile Takip</h1><div class="sub">Cihaz konum paneli</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="conn" id="connPill"><span class="cdot"></span><span id="connText">Bağlanıyor</span></div>
+    <div class="dev-select" id="devSelect">
+      <button class="dev-select-btn" onclick="toggleDevMenu(event)">
+        <span id="devSelLabel">Cihazlar</span>
+        <svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <div class="dev-menu" id="devMenu"></div>
+    </div>
+    <div class="tabs" id="modeTabs" style="display:none">
+      <button class="tab active" id="tab-canli" onclick="setMode('canli')">Canlı</button>
+      <button class="tab" id="tab-gun" onclick="setMode('gun')">Günlük hareket</button>
     </div>
   </header>
 
-  <div class="main">
+  <!-- ANA SAYFA -->
+  <div class="landing" id="landing">
+    <div class="rings"><span></span><span></span><span></span></div>
+    <div class="landing-inner">
+      <h2>Cihazlarım</h2>
+      <p class="lead" id="landingLead">Takip etmek istediğin cihazı seç.</p>
+      <div class="dev-grid" id="devGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAKİP GÖRÜNÜMÜ -->
+  <div class="app" id="app">
     <div class="sidebar">
+      <button class="back" onclick="goHome()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg>
+        Cihazlar
+      </button>
+
+      <!-- CANLI -->
       <div id="panelCanli">
-        <div class="card">
-          <div class="device-name" id="devName">Yükleniyor…</div>
-          <div class="status-row">
-            <span id="lastSeen">—</span>
-            <span class="badge off" id="trackBadge">Takip Kapalı</span>
+        <div class="hero" id="hero">
+          <div class="dev">
+            <span class="beacon" id="heroDot"></span>
+            <span class="dev-name" id="devName">—</span>
+            <span class="seen" id="lastSeen">—</span>
           </div>
-          <button class="track start" id="trackBtn" onclick="toggleTracking()">Takip Başlat</button>
-          <div class="info-grid">
-            <div class="item"><div class="label">Pil</div><div class="value" id="battery">—</div></div>
-            <div class="item"><div class="label">Hız</div><div class="value" id="speed">—</div></div>
-            <div class="item"><div class="label">Doğruluk</div><div class="value" id="accuracy">—</div></div>
-            <div class="item"><div class="label">Son konum</div><div class="value" id="locTime">—</div></div>
+          <div class="status" id="trackBadge">—</div>
+          <div class="status-desc" id="statusDesc">Durum alınıyor…</div>
+          <div class="place" id="curPlace" style="display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span id="curAddr">—</span>
           </div>
+          <button class="track-btn" id="trackBtn" onclick="toggleTracking()">Takip başlat</button>
         </div>
-        <div class="section-title">Son Hareketler</div>
+        <div class="stats">
+          <div class="stat"><div class="k">Pil</div><div class="v" id="battery">—</div></div>
+          <div class="stat"><div class="k">Hız</div><div class="v" id="speed">—</div></div>
+          <div class="stat"><div class="k">Doğruluk</div><div class="v" id="accuracy">—</div></div>
+        </div>
+        <div class="sec-label">Son hareketler</div>
         <div id="historyList"></div>
       </div>
 
+      <!-- GÜNLÜK -->
       <div id="panelGun" style="display:none">
-        <div class="section-title">Tarih</div>
-        <div class="date-bar">
+        <div class="daybar">
           <select id="daySelect" onchange="loadDay()"></select>
-        </div>
-        <div class="date-bar">
-          <div class="tabs" style="width:100%">
-            <div class="tab active" id="vt-rota" onclick="setDayView('rota')" style="flex:1;text-align:center">Rota</div>
-            <div class="tab" id="vt-isi" onclick="setDayView('isi')" style="flex:1;text-align:center">Isı Haritası</div>
+          <div class="view-toggle">
+            <button class="tab active" id="vt-rota" onclick="setDayView('rota')">Rota</button>
+            <button class="tab" id="vt-isi" onclick="setDayView('isi')">Isı haritası</button>
           </div>
         </div>
-        <div class="section-title">Uğranılan Yerler</div>
-        <div id="stopsList"><div class="empty">Tarih seç…</div></div>
+
+        <div class="tools" id="simTools">
+          <div class="tt">Rota simülasyonu</div>
+          <div class="speed-row">
+            <button class="tab active" id="sp-normal" onclick="setSimSpeed('normal')">Normal</button>
+            <button class="tab" id="sp-hizli" onclick="setSimSpeed('hizli')">Hızlı</button>
+            <button class="tab" id="sp-kosar" onclick="setSimSpeed('kosar')">Koşar</button>
+          </div>
+          <button class="btn teal" id="simBtn" onclick="toggleSim()">Simülasyonu başlat</button>
+          <div class="sim-eta" id="simEta"></div>
+        </div>
+
+        <div class="tools" id="routeTools">
+          <div class="tt">En kısa yol</div>
+          <button class="btn" id="pickBtn" onclick="togglePick()">İki nokta seç</button>
+          <div class="hint-inline" id="pickHint" style="display:none">Haritada rotadan iki nokta seç (başlangıç ve bitiş).</div>
+          <div class="cmp" id="cmp">
+            <div class="cmp-row"><span>Gidilen yol</span><span class="cv" id="cmpReal">—</span></div>
+            <div class="cmp-row"><span>En kısa yol</span><span class="cv" id="cmpShort">—</span></div>
+            <div class="cmp-row save"><span>Fark</span><span class="cv" id="cmpDiff">—</span></div>
+          </div>
+        </div>
+
+        <div class="sec-label">Uğranılan yerler</div>
+        <div id="stopsList"><div class="empty">Bir tarih seç.</div></div>
       </div>
     </div>
-
     <div id="map"></div>
   </div>
 
@@ -195,15 +350,17 @@
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script>
     let ADMIN_KEY = localStorage.getItem("adminKey") || "";
-    const DEVICE_ID = "telefon-1";
     const TZ_OFFSET = new Date().getTimezoneOffset();
+    let selId = null, selName = "";
     let map, marker, trail;
-    let currentTracking = false;
-    let pollTimer = null;
-    let mode = "canli";
-    let dayView = "rota";
-    let dayLayers = [];
-    let addressCache = {};
+    let currentTracking = false, pollTimer = null, mode = "canli", dayView = "rota";
+    let dayLayers = [], addressCache = {};
+    // Simülasyon
+    let simSpeed = "normal", simOn = false, simRaf = null, walker = null, dayLatLngs = [];
+    const SPEED_MPS = { normal: 1.4, hizli: 2.1, kosar: 3.3 }; // m/s gerçek
+    const SPEED_LABEL = { normal: "normal yürüyüş", hizli: "hızlı yürüyüş", kosar: "koşu" };
+    // En kısa yol seçimi
+    let pickMode = false, pickPts = [], pickMarkers = [], shortLine = null;
 
     if (ADMIN_KEY) { hideLogin(); startApp(); }
 
@@ -212,30 +369,109 @@
       if (!val) return;
       ADMIN_KEY = val;
       fetch("/api/admin/devices", { headers: { "x-admin-key": ADMIN_KEY } })
-        .then((r) => { if (r.status === 401) throw new Error("Anahtar yanlış"); return r.json(); })
+        .then((r) => { if (r.status === 401) throw new Error("Anahtar yanlış. Tekrar dene."); return r.json(); })
         .then(() => { localStorage.setItem("adminKey", ADMIN_KEY); hideLogin(); startApp(); })
         .catch((e) => { document.getElementById("loginErr").textContent = e.message; });
     }
     function hideLogin() { document.getElementById("login").style.display = "none"; }
 
-    function initMap() {
-      map = L.map("map").setView([39.0, 35.0], 6);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap", maxZoom: 19,
-      }).addTo(map);
-    }
-
-    function startApp() {
-      initMap();
-      refresh();
-      pollTimer = setInterval(() => { if (mode === "canli") refresh(); }, 5000);
-    }
-
     function api(path, opts = {}) {
-      return fetch(path, {
-        ...opts,
+      return fetch(path, { ...opts,
         headers: { "x-admin-key": ADMIN_KEY, "Content-Type": "application/json", ...(opts.headers || {}) },
       }).then((r) => r.json());
+    }
+    function setConn(ok) {
+      document.getElementById("connPill").classList.toggle("ok", ok);
+      document.getElementById("connText").textContent = ok ? "Bağlı" : "Bağlantı yok";
+    }
+
+    // ===== Başlangıç / ana sayfa =====
+    async function startApp() { await renderLanding(); }
+
+    async function renderLanding() {
+      goHome(); // görünümü ana sayfaya al
+      try {
+        const { devices } = await api("/api/admin/devices");
+        setConn(true);
+        buildDevMenu(devices);
+        const grid = document.getElementById("devGrid");
+        const lead = document.getElementById("landingLead");
+        if (!devices || devices.length === 0) {
+          lead.textContent = "";
+          grid.innerHTML = '<div class="landing-empty">Henüz kayıtlı cihaz yok. Telefona uygulamayı kurup bağlanınca burada görünür.</div>';
+          return;
+        }
+        lead.textContent = devices.length + " cihaz kayıtlı · birini seç";
+        grid.innerHTML = devices.map((d) => {
+          const on = d.tracking;
+          const bat = d.lastLocation && d.lastLocation.battery != null ? "%" + d.lastLocation.battery : "—";
+          const seen = d.lastSeen ? timeAgo(d.lastSeen) : "bağlanmadı";
+          return `<div class="dev-card ${on ? "on" : ""}" onclick="openDevice('${d.id}','${(d.name||"").replace(/'/g,"")}')">
+            <div class="top"><span class="beacon ${on ? "live" : ""}"></span><span class="nm">${d.name}</span>
+              <span class="badge">${on ? "Canlı" : "Kapalı"}</span></div>
+            <div class="meta">
+              <div class="m"><div class="k">Pil</div><div class="v">${bat}</div></div>
+              <div class="m"><div class="k">Son görülme</div><div class="v" style="font-size:13px">${seen}</div></div>
+            </div>
+            <div class="open"><span>Takibi aç</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg></div>
+          </div>`;
+        }).join("");
+      } catch (e) { setConn(false); }
+    }
+
+    function buildDevMenu(devices) {
+      const menu = document.getElementById("devMenu");
+      if (!devices || devices.length === 0) { menu.innerHTML = '<div class="dev-menu-empty">Kayıtlı cihaz yok</div>'; return; }
+      menu.innerHTML = devices.map((d) => `
+        <div class="dev-menu-item" onclick="openDevice('${d.id}','${(d.name||"").replace(/'/g,"")}')">
+          <span class="beacon ${d.tracking ? "live" : ""}"></span>
+          <div><div class="nm">${d.name}</div><div class="st">${d.tracking ? "Canlı" : "Kapalı"} · ${d.lastSeen ? timeAgo(d.lastSeen) : "bağlanmadı"}</div></div>
+        </div>`).join("");
+    }
+    function toggleDevMenu(e) { e.stopPropagation(); document.getElementById("devSelect").classList.toggle("open"); }
+    document.addEventListener("click", () => document.getElementById("devSelect").classList.remove("open"));
+
+    function goHome() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      stopSim(); exitPick();
+      selId = null;
+      document.getElementById("app").classList.remove("show");
+      document.getElementById("landing").style.display = "flex";
+      document.getElementById("modeTabs").style.display = "none";
+      document.getElementById("devSelLabel").textContent = "Cihazlar";
+      renderLanding;
+      // cihaz listesini tazele
+      api("/api/admin/devices").then(({ devices }) => { buildDevMenu(devices); refreshLandingCards(devices); setConn(true); }).catch(() => {});
+    }
+    function refreshLandingCards(devices) {
+      // yalnızca ana sayfadaysak kartları yenile
+      if (document.getElementById("landing").style.display === "none") return;
+      const grid = document.getElementById("devGrid");
+      if (devices && devices.length) {
+        document.getElementById("landingLead").textContent = devices.length + " cihaz kayıtlı · birini seç";
+      }
+    }
+
+    function openDevice(id, name) {
+      selId = id; selName = name;
+      document.getElementById("devSelect").classList.remove("open");
+      document.getElementById("landing").style.display = "none";
+      document.getElementById("app").classList.add("show");
+      document.getElementById("modeTabs").style.display = "flex";
+      document.getElementById("devSelLabel").textContent = name;
+      if (!map) initMap();
+      setTimeout(() => map.invalidateSize(), 80);
+      setMode("canli");
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => { if (mode === "canli" && selId) refresh(); }, 5000);
+    }
+
+    function initMap() {
+      map = L.map("map", { zoomControl: true }).setView([39.0, 35.0], 6);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: "© OpenStreetMap © CARTO", maxZoom: 19 }).addTo(map);
+      map.on("click", onMapClick);
     }
 
     function setMode(m) {
@@ -244,219 +480,306 @@
       document.getElementById("tab-gun").classList.toggle("active", m === "gun");
       document.getElementById("panelCanli").style.display = m === "canli" ? "block" : "none";
       document.getElementById("panelGun").style.display = m === "gun" ? "block" : "none";
-      clearDayLayers();
+      clearDayLayers(); stopSim(); exitPick();
       if (marker && m === "gun") { map.removeLayer(marker); marker = null; }
       if (trail && m === "gun") { map.removeLayer(trail); trail = null; }
-      // Harita gizli kutudan görünür hale gelince boyutunu yenile
       setTimeout(() => map.invalidateSize(), 100);
-      if (m === "canli") { refresh(); }
-      else { loadDays(); }
+      if (m === "canli") refresh(); else loadDays();
     }
-
     function setDayView(v) {
       dayView = v;
       document.getElementById("vt-rota").classList.toggle("active", v === "rota");
       document.getElementById("vt-isi").classList.toggle("active", v === "isi");
+      document.getElementById("simTools").style.display = v === "rota" ? "block" : "none";
+      document.getElementById("routeTools").style.display = v === "rota" ? "block" : "none";
       loadDay();
     }
 
     // ===== CANLI =====
     async function refresh() {
+      if (!selId) return;
       try {
         const { devices } = await api("/api/admin/devices");
-        const d = devices.find((x) => x.id === DEVICE_ID) || devices[0];
+        setConn(true);
+        const d = devices.find((x) => x.id === selId);
         if (!d) return;
         renderDevice(d);
         if (mode === "canli") {
-          const { history } = await api(`/api/admin/devices/${DEVICE_ID}/history?limit=200`);
-          renderHistory(history);
-          renderTrailLive(history);
+          const { history } = await api(`/api/admin/devices/${selId}/history?limit=200`);
+          renderHistory(history); renderTrailLive(history);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { setConn(false); }
     }
 
     function renderDevice(d) {
       currentTracking = d.tracking;
       document.getElementById("devName").textContent = d.name;
-      const badge = document.getElementById("trackBadge");
-      const btn = document.getElementById("trackBtn");
-      const headDot = document.getElementById("headDot");
+      const hero = document.getElementById("hero"), badge = document.getElementById("trackBadge");
+      const desc = document.getElementById("statusDesc"), btn = document.getElementById("trackBtn");
+      const headDot = document.getElementById("headDot"), heroDot = document.getElementById("heroDot");
       if (d.tracking) {
-        badge.textContent = "Takip Aktif"; badge.className = "badge on";
-        btn.textContent = "Takibi Durdur"; btn.className = "track stop";
-        headDot.className = "dot on";
+        hero.classList.add("on"); badge.textContent = "Canlı"; desc.textContent = "Konum şu anda paylaşılıyor.";
+        btn.textContent = "Takibi durdur"; btn.className = "track-btn stop";
+        headDot.className = "beacon live"; heroDot.className = "beacon live";
       } else {
-        badge.textContent = "Takip Kapalı"; badge.className = "badge off";
-        btn.textContent = "Takip Başlat"; btn.className = "track start";
-        headDot.className = "dot";
+        hero.classList.remove("on"); badge.textContent = "Kapalı"; desc.textContent = "Konum paylaşılmıyor. Pil ve gizlilik korunuyor.";
+        btn.textContent = "Takip başlat"; btn.className = "track-btn";
+        headDot.className = "beacon"; heroDot.className = "beacon";
       }
-      document.getElementById("lastSeen").textContent =
-        d.lastSeen ? "Son bağlantı: " + timeAgo(d.lastSeen) : "Henüz bağlanmadı";
-      const loc = d.lastLocation;
+      document.getElementById("lastSeen").textContent = d.lastSeen ? timeAgo(d.lastSeen) : "bağlanmadı";
+      const loc = d.lastLocation, place = document.getElementById("curPlace");
       if (loc) {
-        document.getElementById("battery").textContent = loc.battery != null ? loc.battery + "%" : "—";
-        document.getElementById("speed").textContent = loc.speed != null ? Math.round(loc.speed * 3.6) + " km/s" : "—";
-        document.getElementById("accuracy").textContent = loc.accuracy != null ? "±" + Math.round(loc.accuracy) + " m" : "—";
-        document.getElementById("locTime").textContent = timeAgo(loc.ts);
+        document.getElementById("battery").innerHTML = loc.battery != null ? loc.battery + "<small>%</small>" : "—";
+        document.getElementById("speed").innerHTML = loc.speed != null ? Math.round(loc.speed * 3.6) + " <small>km/s</small>" : "—";
+        document.getElementById("accuracy").innerHTML = loc.accuracy != null ? "±" + Math.round(loc.accuracy) + " <small>m</small>" : "—";
         if (mode === "canli") placeMarker(loc);
+        place.style.display = "flex"; resolveAddress(loc.lat, loc.lon, "curAddr");
+      } else {
+        place.style.display = "none";
+        ["battery","speed","accuracy"].forEach(i => document.getElementById(i).textContent = "—");
       }
     }
-
     function placeMarker(loc) {
       const pos = [loc.lat, loc.lon];
-      if (!marker) { marker = L.marker(pos).addTo(map); map.setView(pos, 16); }
+      if (!marker) { marker = L.circleMarker(pos, { radius: 9, color: "#19d3a2", weight: 3, fillColor: "#19d3a2", fillOpacity: .9 }).addTo(map); map.setView(pos, 16); }
       else marker.setLatLng(pos);
-      marker.bindPopup(`<b>Son konum</b><br>${timeAgo(loc.ts)}<br>${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}`);
+      marker.bindPopup(`<b>Şu anki konum</b><br>${timeAgo(loc.ts)}`);
     }
-
     function renderTrailLive(history) {
       if (trail) { map.removeLayer(trail); trail = null; }
       if (!history || history.length < 2) return;
-      const pts = history.map((h) => [h.lat, h.lon]).reverse();
-      trail = L.polyline(pts, { color: "#4f8cff", weight: 3, opacity: 0.6 }).addTo(map);
+      trail = L.polyline(history.map((h) => [h.lat, h.lon]).reverse(), { color: "#19d3a2", weight: 3, opacity: .5 }).addTo(map);
     }
-
     function renderHistory(history) {
       const el = document.getElementById("historyList");
-      if (!history || history.length === 0) { el.innerHTML = '<div class="empty">Henüz konum yok.</div>'; return; }
+      if (!history || history.length === 0) { el.innerHTML = '<div class="empty">Henüz konum gelmedi. Takibi başlat.</div>'; return; }
       el.innerHTML = history.slice(0, 50).map((h) => `
-        <div class="history-item" onclick="map.setView([${h.lat},${h.lon}],17)">
-          <div>${h.lat.toFixed(5)}, ${h.lon.toFixed(5)}</div>
-          <div class="time">${timeAgo(h.ts)}${h.battery != null ? " · " + h.battery + "% pil" : ""}</div>
-        </div>`).join("");
+        <div class="move" onclick="map.setView([${h.lat},${h.lon}],17)">
+          <span class="tick"></span><div class="mtext">
+          <div class="mcoord">${h.lat.toFixed(5)}, ${h.lon.toFixed(5)}</div>
+          <div class="mtime">${timeAgo(h.ts)}${h.battery != null ? " · %" + h.battery + " pil" : ""}</div></div></div>`).join("");
     }
-
     async function toggleTracking() {
       const next = !currentTracking;
-      if (next && !confirm("Takibi başlatmak istediğine emin misin?\n\nTelefon, aktifleştikten sonra konumunu göndermeye başlayacak.")) return;
-      await api(`/api/admin/devices/${DEVICE_ID}/tracking`, { method: "POST", body: JSON.stringify({ enabled: next }) });
+      if (next && !confirm("Takibi başlat?\n\nTelefon, aktifleştikten sonra konumunu göndermeye başlayacak.")) return;
+      await api(`/api/admin/devices/${selId}/tracking`, { method: "POST", body: JSON.stringify({ enabled: next }) });
       refresh();
     }
 
     // ===== GÜNLÜK =====
-    function clearDayLayers() {
-      dayLayers.forEach((l) => map.removeLayer(l));
-      dayLayers = [];
-    }
-
+    function clearDayLayers() { dayLayers.forEach((l) => map.removeLayer(l)); dayLayers = []; }
     async function loadDays() {
-      const { days } = await api(`/api/admin/devices/${DEVICE_ID}/days?tzOffsetMin=${TZ_OFFSET}`);
+      const { days } = await api(`/api/admin/devices/${selId}/days?tzOffsetMin=${TZ_OFFSET}`);
       const sel = document.getElementById("daySelect");
       if (!days || days.length === 0) {
         sel.innerHTML = '<option>Veri yok</option>';
-        document.getElementById("stopsList").innerHTML = '<div class="empty">Henüz kayıtlı gün yok.</div>';
-        return;
+        document.getElementById("stopsList").innerHTML = '<div class="empty">Henüz kayıtlı gün yok. Takip açıkken konumlar burada birikir.</div>';
+        dayLatLngs = []; updateSimEta(); return;
       }
       sel.innerHTML = days.map((d) => `<option value="${d}">${formatDate(d)}</option>`).join("");
       loadDay();
     }
-
     async function loadDay() {
       const date = document.getElementById("daySelect").value;
       if (!date || date === "Veri yok") return;
-      clearDayLayers();
-      const data = await api(`/api/admin/devices/${DEVICE_ID}/day?date=${date}&tzOffsetMin=${TZ_OFFSET}`);
-      const pts = data.points || [];
-      const stops = data.stops || [];
-
-      if (pts.length === 0) {
-        document.getElementById("stopsList").innerHTML = '<div class="empty">Bu gün için konum yok.</div>';
-        return;
-      }
-
-      const latlngs = pts.map((p) => [p.lat, p.lon]);
-
+      clearDayLayers(); stopSim(); exitPick();
+      const data = await api(`/api/admin/devices/${selId}/day?date=${date}&tzOffsetMin=${TZ_OFFSET}`);
+      const pts = data.points || [], stops = data.stops || [];
+      if (pts.length === 0) { document.getElementById("stopsList").innerHTML = '<div class="empty">Bu gün için konum kaydı yok.</div>'; dayLatLngs = []; updateSimEta(); return; }
+      dayLatLngs = pts.map((p) => [p.lat, p.lon]);
       if (dayView === "isi") {
-        const heat = L.heatLayer(pts.map((p) => [p.lat, p.lon, 0.6]), {
-          radius: 25, blur: 18, maxZoom: 17,
-        }).addTo(map);
+        const heat = L.heatLayer(pts.map((p) => [p.lat, p.lon, .6]), { radius: 25, blur: 18, maxZoom: 17,
+          gradient: { 0.2: "#4c8dff", 0.5: "#19d3a2", 0.8: "#ffb020", 1: "#ff5a6a" } }).addTo(map);
         dayLayers.push(heat);
       } else {
-        const line = L.polyline(latlngs, { color: "#4f8cff", weight: 4, opacity: 0.7 }).addTo(map);
+        const line = L.polyline(dayLatLngs, { color: "#4c8dff", weight: 4, opacity: .75 }).addTo(map);
         dayLayers.push(line);
-        const startM = L.circleMarker(latlngs[0], { radius: 7, color: "#35c88a", fillColor: "#35c88a", fillOpacity: 1 })
-          .addTo(map).bindPopup("Gün başlangıcı");
-        const endM = L.circleMarker(latlngs[latlngs.length - 1], { radius: 7, color: "#e5484d", fillColor: "#e5484d", fillOpacity: 1 })
-          .addTo(map).bindPopup("Son konum");
-        dayLayers.push(startM, endM);
+        dayLayers.push(L.circleMarker(dayLatLngs[0], { radius: 7, color: "#19d3a2", fillColor: "#19d3a2", fillOpacity: 1 }).addTo(map).bindPopup("Gün başlangıcı"));
+        dayLayers.push(L.circleMarker(dayLatLngs[dayLatLngs.length - 1], { radius: 7, color: "#ff5a6a", fillColor: "#ff5a6a", fillOpacity: 1 }).addTo(map).bindPopup("Son konum"));
       }
-
-      stops.forEach((s, i) => {
-        const icon = L.divIcon({
-          className: "", html: `<div class="stop-marker-label">${i + 1}</div>`,
-          iconSize: [26, 26], iconAnchor: [13, 13],
-        });
-        const m = L.marker([s.lat, s.lon], { icon }).addTo(map)
-          .bindPopup(`<b>Durak ${i + 1}</b><br>${fmtTime(s.start)} - ${fmtTime(s.end)}<br>${s.durationMin} dakika`);
-        dayLayers.push(m);
+      stops.forEach((st, i) => {
+        const icon = L.divIcon({ className: "", html: `<div class="stop-pin"><span>${i + 1}</span></div>`, iconSize: [24, 24], iconAnchor: [12, 24] });
+        dayLayers.push(L.marker([st.lat, st.lon], { icon }).addTo(map).bindPopup(`<b>Durak ${i + 1}</b><br>${fmtTime(st.start)} – ${fmtTime(st.end)}<br>${st.durationMin} dakika`));
       });
-
-      const bounds = L.latLngBounds(latlngs);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
-
-      renderStops(stops);
+      map.fitBounds(L.latLngBounds(dayLatLngs), { padding: [40, 40], maxZoom: 16 });
+      renderStops(stops); updateSimEta();
     }
-
     function renderStops(stops) {
       const el = document.getElementById("stopsList");
-      if (!stops || stops.length === 0) {
-        el.innerHTML = '<div class="empty">Bu gün uzun süreli durak yok.</div>';
-        return;
-      }
+      if (!stops || stops.length === 0) { el.innerHTML = '<div class="empty">Bu gün uzun süreli durak yok.</div>'; return; }
       el.innerHTML = stops.map((s, i) => `
-        <div class="stop-item" onclick="map.setView([${s.lat},${s.lon}],17)">
-          <div class="st-top">
-            <span class="st-time">${i + 1}. ${fmtTime(s.start)} – ${fmtTime(s.end)}</span>
-            <span class="st-dur">${s.durationMin} dk</span>
-          </div>
-          <div class="st-addr" id="addr-${i}">Adres alınıyor…</div>
-        </div>`).join("");
-      stops.forEach((s, i) => {
-        setTimeout(() => resolveAddress(s.lat, s.lon, `addr-${i}`), i * 1100);
-      });
+        <div class="stop" onclick="map.setView([${s.lat},${s.lon}],17)">
+          <div class="shead"><span class="stime">${i + 1}. ${fmtTime(s.start)} – ${fmtTime(s.end)}</span><span class="sdur">${s.durationMin} dk</span></div>
+          <div class="saddr" id="addr-${i}">Adres alınıyor…</div></div>`).join("");
+      stops.forEach((s, i) => setTimeout(() => resolveAddress(s.lat, s.lon, `addr-${i}`), i * 1100));
     }
 
+    // ===== Mesafe yardımcıları =====
+    function haversine(a, b) {
+      const R = 6371000, toRad = (x) => x * Math.PI / 180;
+      const dLat = toRad(b[0] - a[0]), dLon = toRad(b[1] - a[1]);
+      const h = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.sin(dLon/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+    function pathLength(latlngs) { let d = 0; for (let i = 1; i < latlngs.length; i++) d += haversine(latlngs[i-1], latlngs[i]); return d; }
+    function fmtDist(m) { return m >= 1000 ? (m/1000).toFixed(2) + " km" : Math.round(m) + " m"; }
+    function fmtDur(sec) { const m = Math.round(sec/60); if (m < 60) return m + " dk"; return Math.floor(m/60) + " sa " + (m%60) + " dk"; }
+
+    // ===== SİMÜLASYON =====
+    function setSimSpeed(s) {
+      simSpeed = s;
+      ["normal","hizli","kosar"].forEach(k => document.getElementById("sp-"+k).classList.toggle("active", k === s));
+      updateSimEta();
+      if (simOn) { stopSim(); startSim(); }
+    }
+    function updateSimEta() {
+      const el = document.getElementById("simEta");
+      if (!dayLatLngs || dayLatLngs.length < 2) { el.innerHTML = "Simülasyon için rotalı bir gün seç."; document.getElementById("simBtn").disabled = true; return; }
+      document.getElementById("simBtn").disabled = false;
+      const dist = pathLength(dayLatLngs);
+      const sec = dist / SPEED_MPS[simSpeed];
+      el.innerHTML = `Rota uzunluğu <b>${fmtDist(dist)}</b> · ${SPEED_LABEL[simSpeed]} ile <b>${fmtDur(sec)}</b>`;
+    }
+    function toggleSim() { if (simOn) stopSim(); else startSim(); }
+    function startSim() {
+      if (!dayLatLngs || dayLatLngs.length < 2) return;
+      stopSim();
+      simOn = true; document.getElementById("simBtn").textContent = "Durdur"; document.getElementById("simBtn").classList.add("primary");
+      // kümülatif mesafeler
+      const cum = [0]; for (let i = 1; i < dayLatLngs.length; i++) cum.push(cum[i-1] + haversine(dayLatLngs[i-1], dayLatLngs[i]));
+      const total = cum[cum.length - 1];
+      const icon = L.divIcon({ className: "", html: `<div class="walker-wrap"><div class="walker ${simSpeed==="kosar"?"run":""}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#06281f"><circle cx="13" cy="4" r="2"/><path d="M12 7l-3 2-2 4 1.5.6L10 11l2-1v4l-2 5h2l2-4 2 4h2l-2.5-6V9l2 2 2-1-3-3z"/></svg>
+      </div></div>`, iconSize: [40,40], iconAnchor: [20,20] });
+      walker = L.marker(dayLatLngs[0], { icon, zIndexOffset: 1000 }).addTo(map);
+      // Görsel: 60x hızlandırılmış gerçek zaman
+      const visualMps = SPEED_MPS[simSpeed] * 60;
+      let dist = 0, last = performance.now();
+      function step(now) {
+        if (!simOn) return;
+        const dt = (now - last) / 1000; last = now;
+        dist += visualMps * dt;
+        if (dist >= total) { walker.setLatLng(dayLatLngs[dayLatLngs.length-1]); finishSim(); return; }
+        // segmenti bul
+        let i = 1; while (i < cum.length && cum[i] < dist) i++;
+        const segStart = cum[i-1], segEnd = cum[i], t = (dist - segStart) / (segEnd - segStart || 1);
+        const a = dayLatLngs[i-1], b = dayLatLngs[i];
+        walker.setLatLng([a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t]);
+        simRaf = requestAnimationFrame(step);
+      }
+      simRaf = requestAnimationFrame(step);
+    }
+    function finishSim() {
+      simOn = false; if (simRaf) cancelAnimationFrame(simRaf);
+      document.getElementById("simBtn").textContent = "Tekrar oynat"; document.getElementById("simBtn").classList.remove("primary");
+    }
+    function stopSim() {
+      simOn = false; if (simRaf) { cancelAnimationFrame(simRaf); simRaf = null; }
+      if (walker) { map.removeLayer(walker); walker = null; }
+      const b = document.getElementById("simBtn"); if (b) { b.textContent = "Simülasyonu başlat"; b.classList.remove("primary"); }
+    }
+
+    // ===== EN KISA YOL =====
+    function togglePick() { if (pickMode) exitPick(); else enterPick(); }
+    function enterPick() {
+      if (!dayLatLngs || dayLatLngs.length < 2) { alert("Önce rotalı bir gün seç."); return; }
+      pickMode = true; pickPts = []; clearPick();
+      document.getElementById("pickBtn").textContent = "Seçimi iptal et";
+      document.getElementById("pickBtn").classList.add("primary");
+      document.getElementById("pickHint").style.display = "block";
+      document.getElementById("cmp").classList.remove("show");
+    }
+    function exitPick() {
+      pickMode = false; const b = document.getElementById("pickBtn");
+      if (b) { b.textContent = "İki nokta seç"; b.classList.remove("primary"); }
+      const h = document.getElementById("pickHint"); if (h) h.style.display = "none";
+      clearPick();
+    }
+    function clearPick() {
+      pickMarkers.forEach(m => map.removeLayer(m)); pickMarkers = [];
+      if (shortLine) { map.removeLayer(shortLine); shortLine = null; }
+      const c = document.getElementById("cmp"); if (c) c.classList.remove("show");
+    }
+    function nearestRouteIndex(latlng) {
+      let best = 0, bd = Infinity;
+      for (let i = 0; i < dayLatLngs.length; i++) {
+        const d = haversine([latlng.lat, latlng.lng], dayLatLngs[i]);
+        if (d < bd) { bd = d; best = i; }
+      }
+      return best;
+    }
+    async function onMapClick(e) {
+      if (!pickMode) return;
+      const idx = nearestRouteIndex(e.latlng);
+      const pos = dayLatLngs[idx];
+      pickPts.push({ idx, pos });
+      const n = pickPts.length;
+      const icon = L.divIcon({ className: "", html: `<div class="pick-pin">${n}</div>`, iconSize: [26,26], iconAnchor: [13,13] });
+      pickMarkers.push(L.marker(pos, { icon, zIndexOffset: 900 }).addTo(map));
+      if (pickPts.length === 2) { pickMode = false; document.getElementById("pickHint").style.display = "none";
+        document.getElementById("pickBtn").textContent = "İki nokta seç"; document.getElementById("pickBtn").classList.remove("primary");
+        computeShortest(); }
+    }
+    async function computeShortest() {
+      let [p1, p2] = pickPts;
+      if (p1.idx > p2.idx) [p1, p2] = [p2, p1];
+      // Gerçek gidilen yol (rota üzerindeki iki nokta arası)
+      const seg = dayLatLngs.slice(p1.idx, p2.idx + 1);
+      const realDist = pathLength(seg);
+      // OSRM en kısa yol
+      document.getElementById("cmp").classList.add("show");
+      document.getElementById("cmpReal").textContent = fmtDist(realDist);
+      document.getElementById("cmpShort").textContent = "hesaplanıyor…";
+      document.getElementById("cmpDiff").textContent = "—";
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${p1.pos[1]},${p1.pos[0]};${p2.pos[1]},${p2.pos[0]}?overview=full&geometries=geojson`;
+        const r = await fetch(url); const j = await r.json();
+        if (!j.routes || !j.routes[0]) throw new Error("yol yok");
+        const route = j.routes[0];
+        const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        if (shortLine) map.removeLayer(shortLine);
+        shortLine = L.polyline(coords, { color: "#19d3a2", weight: 5, opacity: .9, dashArray: "1,0" }).addTo(map);
+        map.fitBounds(shortLine.getBounds(), { padding: [50, 50] });
+        const shortDist = route.distance;
+        document.getElementById("cmpShort").textContent = fmtDist(shortDist);
+        const diff = realDist - shortDist;
+        document.getElementById("cmpDiff").textContent = (diff > 0 ? "−" : "+") + fmtDist(Math.abs(diff)) + (realDist>0 ? " (%" + Math.round(Math.abs(diff)/realDist*100) + ")" : "");
+      } catch (err) {
+        // Düz çizgi yedeği
+        const straight = haversine(p1.pos, p2.pos);
+        if (shortLine) map.removeLayer(shortLine);
+        shortLine = L.polyline([p1.pos, p2.pos], { color: "#19d3a2", weight: 4, opacity: .8, dashArray: "6,8" }).addTo(map);
+        document.getElementById("cmpShort").textContent = fmtDist(straight) + " (kuş uçuşu)";
+        const diff = realDist - straight;
+        document.getElementById("cmpDiff").textContent = fmtDist(Math.abs(diff));
+      }
+    }
+
+    // ===== Adres (ters-geocoding) =====
     async function resolveAddress(lat, lon, elId) {
-      const key = lat.toFixed(4) + "," + lon.toFixed(4);
-      const el = document.getElementById(elId);
+      const key = lat.toFixed(4) + "," + lon.toFixed(4), el = document.getElementById(elId);
       if (!el) return;
       if (addressCache[key]) { el.textContent = addressCache[key]; return; }
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=tr&zoom=16`);
-        const j = await r.json();
-        const a = j.address || {};
-        const parts = [
-          a.neighbourhood || a.suburb || a.quarter,
-          a.road,
-          a.town || a.city || a.village || a.county,
-        ].filter(Boolean);
+        const j = await r.json(); const a = j.address || {};
+        const parts = [a.neighbourhood || a.suburb || a.quarter, a.road, a.town || a.city || a.village || a.county].filter(Boolean);
         const text = parts.length ? parts.join(", ") : (j.display_name || "Adres bulunamadı");
-        addressCache[key] = text;
-        if (document.getElementById(elId)) document.getElementById(elId).textContent = text;
-      } catch (e) {
-        if (document.getElementById(elId)) document.getElementById(elId).textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-      }
+        addressCache[key] = text; const e2 = document.getElementById(elId); if (e2) e2.textContent = text;
+      } catch (e) { const e2 = document.getElementById(elId); if (e2) e2.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`; }
     }
 
     function timeAgo(ts) {
-      const diff = Date.now() - ts; const s = Math.floor(diff / 1000);
-      if (s < 60) return s + " sn önce";
-      const m = Math.floor(s / 60); if (m < 60) return m + " dk önce";
-      const h = Math.floor(m / 60); if (h < 24) return h + " saat önce";
-      return Math.floor(h / 24) + " gün önce";
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return s + " sn önce"; const m = Math.floor(s/60); if (m < 60) return m + " dk önce";
+      const h = Math.floor(m/60); if (h < 24) return h + " saat önce"; return Math.floor(h/24) + " gün önce";
     }
-    function fmtTime(ts) {
-      return new Date(ts).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-    }
+    function fmtTime(ts) { return new Date(ts).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }); }
     function formatDate(ds) {
-      const [y, m, d] = ds.split("-");
-      const today = new Date();
-      const tStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
-      const yd = new Date(today.getTime() - 86400000);
-      const yStr = yd.getFullYear() + "-" + String(yd.getMonth()+1).padStart(2,"0") + "-" + String(yd.getDate()).padStart(2,"0");
-      if (ds === tStr) return "Bugün (" + d + "." + m + ")";
-      if (ds === yStr) return "Dün (" + d + "." + m + ")";
-      return d + "." + m + "." + y;
+      const [y, m, d] = ds.split("-"); const t = new Date();
+      const td = t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+      const yd = new Date(t.getTime()-86400000); const ys = yd.getFullYear()+"-"+String(yd.getMonth()+1).padStart(2,"0")+"-"+String(yd.getDate()).padStart(2,"0");
+      if (ds === td) return "Bugün · " + d + "." + m; if (ds === ys) return "Dün · " + d + "." + m; return d + "." + m + "." + y;
     }
   </script>
 </body>
