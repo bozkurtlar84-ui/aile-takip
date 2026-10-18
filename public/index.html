@@ -221,6 +221,8 @@
     .walker.run { animation-duration: .25s; }
     .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--line) !important; }
     .leaflet-bar { border: 1px solid var(--line) !important; }
+    /* Açık OSM döşemelerini koyu temaya çevir (anahtar gerektirmez) */
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.93) contrast(.9); }
 
     @media (max-width: 760px) {
       .app.show { flex-direction: column; }
@@ -469,8 +471,8 @@
 
     function initMap() {
       map = L.map("map", { zoomControl: true }).setView([39.0, 35.0], 6);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: "© OpenStreetMap © CARTO", maxZoom: 19 }).addTo(map);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap", maxZoom: 19, subdomains: "abc" }).addTo(map);
       map.on("click", onMapClick);
     }
 
